@@ -49,7 +49,7 @@ public class WebViewSampleTestActivty extends DoTestActivity{
 
 	@Override
 	protected void doTestSyncMethod() {
-		Map<String, String> _paras_back = new HashMap<String, String>();
+		Map<String, Object> _paras_back = new HashMap<String, Object>();
         DoService.syncMethod(this.model, "back", _paras_back);
 	}
 

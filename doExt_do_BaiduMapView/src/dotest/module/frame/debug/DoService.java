@@ -41,7 +41,7 @@ public class DoService {
          }
      }
 
-     public static void syncMethod(DoModule _module, String _methodName, Map<String, String> _paras){
+     public static void syncMethod(DoModule _module, String _methodName, Map<String, Object> _paras){
          DoInvokeResult _invokeResult = scriptEngine.CreateInvokeResult(null);
          try{
         	 JSONObject _jsonPara = new JSONObject();
