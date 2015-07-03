@@ -35,6 +35,7 @@ import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.map.InfoWindow.OnInfoWindowClickListener;
 import com.baidu.mapapi.model.LatLng;
 
+import core.interfaces.DoIModuleTypeID;
 import core.interfaces.DoIScriptEngine;
 import core.interfaces.DoIUIModuleView;
 import core.object.DoInvokeResult;
@@ -49,7 +50,7 @@ import doext.define.do_BaiduMapView_MAbstract;
  * 参数解释：@_messageName字符串事件名称，@jsonResult传递事件参数对象； 获取DoInvokeResult对象方式new
  * DoInvokeResult(this.model.getUniqueKey());
  */
-public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView, do_BaiduMapView_IMethod {
+public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView, do_BaiduMapView_IMethod, DoIModuleTypeID  {
 
 	/**
 	 * 每个UIview都会引用一个具体的model实例；
@@ -92,7 +93,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 				if (info != null)
 					_pop.setText(info);
 				_pop.setTextSize(13f);
-				int _popupId = DoResourcesHelper.getIdentifier("popup", "drawable", null);
+				int _popupId = DoResourcesHelper.getIdentifier("popup", "drawable",do_BaiduMapView_View.this);
 				_pop.setBackgroundResource(_popupId);
 				_pop.setGravity(Gravity.CENTER);
 				
@@ -344,5 +345,10 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 //		}
 
 		return bitmap;
+	}
+
+	@Override
+	public String getTypeID() {
+		return  model.getTypeID();
 	}
 }
