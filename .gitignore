@@ -7,3 +7,4 @@ proguard/
 *.classpath
 /doExt_do_BaiduMapView/do_build.xml
 /doExt_do_BaiduMapView/libs/docore.jar
+/doExt_do_BaiduMapView/do_BaiduMapView.zip
