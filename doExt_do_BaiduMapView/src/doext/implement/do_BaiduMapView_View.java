@@ -50,7 +50,7 @@ import doext.define.do_BaiduMapView_MAbstract;
  * 参数解释：@_messageName字符串事件名称，@jsonResult传递事件参数对象； 获取DoInvokeResult对象方式new
  * DoInvokeResult(this.model.getUniqueKey());
  */
-public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView, do_BaiduMapView_IMethod, DoIModuleTypeID  {
+public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView, do_BaiduMapView_IMethod, DoIModuleTypeID {
 
 	/**
 	 * 每个UIview都会引用一个具体的model实例；
@@ -93,16 +93,16 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 				if (info != null)
 					_pop.setText(info);
 				_pop.setTextSize(13f);
-				int _popupId = DoResourcesHelper.getIdentifier("popup", "drawable",do_BaiduMapView_View.this);
+				int _popupId = DoResourcesHelper.getIdentifier("popup", "drawable", do_BaiduMapView_View.this);
 				_pop.setBackgroundResource(_popupId);
 				_pop.setGravity(Gravity.CENTER);
-				
+
 				InfoWindow mInfoWindow = new InfoWindow(BitmapDescriptorFactory.fromView(_pop), arg0.getPosition(), -47, new OnInfoWindowClickListener() {
 					public void onInfoWindowClick() {
 						doBaiduMapView_TouchMarker(id);
 					}
 				});
-				
+
 				baiduMap.showInfoWindow(mInfoWindow);
 				// 标记点击事件回调
 				doBaiduMapView_TouchMarker(id);
@@ -117,7 +117,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	 */
 	@Override
 	public void loadView(DoUIModule _doUIModule) throws Exception {
-		
+
 		this.model = (do_BaiduMapView_MAbstract) _doUIModule;
 	}
 
@@ -224,16 +224,17 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 
 	/**
 	 * 设置地图中心点；
+	 * 
 	 * @_dictParas 参数（K,V），可以通过此对象提供相关方法来获取参数值（Key：为参数名称）；
 	 * @_scriptEngine 当前Page JS上下文环境对象
 	 * @_invokeResult 用于返回方法结果对象
 	 */
 	@Override
-	public void setCenter(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception  {
+	public void setCenter(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
 		Double latitude = DoJsonHelper.getDouble(_dictParas, "latitude", -1);
 		Double longitude = DoJsonHelper.getDouble(_dictParas, "longitude", -1);
-		
-		if(latitude>0&&longitude>0){
+
+		if (latitude > 0 && longitude > 0) {
 			// 设定中心点坐标
 			LatLng cenpt = new LatLng(latitude, longitude);
 			// 定义地图状态
@@ -243,23 +244,24 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			MapStatusUpdate mMapStatusUpdate = MapStatusUpdateFactory.newMapStatus(mMapStatus);
 			// 改变地图状态
 			baiduMap.setMapStatus(mMapStatusUpdate);
-		}else{
+			_invokeResult.setResultBoolean(true);
+		} else {
 			_invokeResult.setResultBoolean(false);
 			throw new Exception("中心点经纬度不合法");
 		}
-		_invokeResult.setResultBoolean(true);
 
 	}
 
 	/**
 	 * 添加一组标记；
+	 * 
 	 * @_dictParas 参数（K,V），可以通过此对象提供相关方法来获取参数值（Key：为参数名称）；
 	 * @_scriptEngine 当前Page JS上下文环境对象
 	 * @_invokeResult 用于返回方法结果对象
 	 */
 	@Override
 	public void addMarkers(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) {
-		
+
 		try {
 			JSONArray dataArray = (JSONArray) _dictParas.get("data");
 			for (int i = 0; i < dataArray.length(); i++) {
@@ -290,6 +292,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 
 	/**
 	 * 移除一组指定标记；
+	 * 
 	 * @_dictParas 参数（K,V），可以通过此对象提供相关方法来获取参数值（Key：为参数名称）；
 	 * @_scriptEngine 当前Page JS上下文环境对象
 	 * @_invokeResult 用于返回方法结果对象
@@ -298,21 +301,18 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	public void removeMarker(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
 		JSONArray dataArray = DoJsonHelper.getJSONArray(_dictParas, "ids");
 		for (int i = 0; i < dataArray.length(); i++) {
-			if(overlays.containsKey(dataArray.get(i))){
+			if (overlays.containsKey(dataArray.get(i))) {
 				overlays.get(dataArray.get(i)).remove();
 				overlays.remove(dataArray.get(i));
-			}else{
-				_invokeResult.setResultBoolean(false);
-				throw new Exception("标记id:"+dataArray.get(i) + "不存在");
+			} else {
+				DoServiceContainer.getLogEngine().writeError("do_BaiduMapView removeMarker \r\n", new Exception("标记id:" + dataArray.get(i) + "不存在"));
 			}
-			
 		}
-		_invokeResult.setResultBoolean(true);
-		
 	}
 
 	/**
 	 * 移除所有标记；
+	 * 
 	 * @_dictParas 参数（K,V），可以通过此对象提供相关方法来获取参数值（Key：为参数名称）；
 	 * @_scriptEngine 当前Page JS上下文环境对象
 	 * @_invokeResult 用于返回方法结果对象
@@ -328,27 +328,19 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		_invokeResult.setResultText(id);
 		this.model.getEventCenter().fireEvent("touchMarker", _invokeResult);
 	}
-	
+
 	private Bitmap getLocalBitmap(String local) throws Exception {
 		Bitmap bitmap = null;
 		if (null == DoIOHelper.getHttpUrlPath(local) && local != null && !"".equals(local)) {
-			bitmap  = DoImageLoadHelper.getInstance().loadLocal(local, -1, -1);
+			bitmap = DoImageLoadHelper.getInstance().loadLocal(local, -1, -1);
 		} else {
 			throw new Exception("标记缩略图,只支持本地图片");
 		}
-//		// 本地测试手机内存卡图片路径
-//		File f = new File(local);
-//		if (f.exists()) {
-//			bitmap = DoImageLoadHelper.getInstance().loadLocal(local, -1, -1);
-//		} else {
-//			throw new Exception(local + "文件不存在");
-//		}
-
 		return bitmap;
 	}
 
 	@Override
 	public String getTypeID() {
-		return  model.getTypeID();
+		return model.getTypeID();
 	}
 }
