@@ -332,7 +332,8 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	private Bitmap getLocalBitmap(String local) throws Exception {
 		Bitmap bitmap = null;
 		if (null == DoIOHelper.getHttpUrlPath(local) && local != null && !"".equals(local)) {
-			bitmap = DoImageLoadHelper.getInstance().loadLocal(local, -1, -1);
+			String path = DoIOHelper.getLocalFileFullPath(this.model.getCurrentPage().getCurrentApp(), local);
+			bitmap = DoImageLoadHelper.getInstance().loadLocal(path, -1, -1);
 		} else {
 			throw new Exception("标记缩略图,只支持本地图片");
 		}
