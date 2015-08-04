@@ -60,7 +60,8 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	private BaiduMap baiduMap;
 	private Map<String, Marker> overlays;
 	private Context mContext;
-
+	private String popWindowId;
+	
 	public do_BaiduMapView_View(Context context) {
 		super(context);
 		SDKInitializer.initialize(context.getApplicationContext());
@@ -102,8 +103,9 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 						doBaiduMapView_TouchMarker(id);
 					}
 				});
-
+				popWindowId = id;
 				baiduMap.showInfoWindow(mInfoWindow);
+				
 				// 标记点击事件回调
 				doBaiduMapView_TouchMarker(id);
 
@@ -304,6 +306,9 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			if (overlays.containsKey(dataArray.get(i))) {
 				overlays.get(dataArray.get(i)).remove();
 				overlays.remove(dataArray.get(i));
+				if(popWindowId!=null&&dataArray.get(i).equals(popWindowId)){
+					baiduMap.hideInfoWindow();
+				}
 			} else {
 				DoServiceContainer.getLogEngine().writeError("do_BaiduMapView removeMarker \r\n", new Exception("标记id:" + dataArray.get(i) + "不存在"));
 			}
@@ -319,8 +324,10 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	 */
 	@Override
 	public void removeAll(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
+		baiduMap.hideInfoWindow();
 		overlays.clear();
 		baiduMap.clear();
+		
 	}
 
 	private void doBaiduMapView_TouchMarker(String id) {
