@@ -60,7 +60,8 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	private BaiduMap baiduMap;
 	private Map<String, Marker> overlays;
 	private Context mContext;
-
+	private String popWindowId;
+	
 	public do_BaiduMapView_View(Context context) {
 		super(context);
 		SDKInitializer.initialize(context.getApplicationContext());
@@ -102,8 +103,9 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 						doBaiduMapView_TouchMarker(id);
 					}
 				});
-
+				popWindowId = id;
 				baiduMap.showInfoWindow(mInfoWindow);
+				
 				// 标记点击事件回调
 				doBaiduMapView_TouchMarker(id);
 
@@ -304,6 +306,9 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			if (overlays.containsKey(dataArray.get(i))) {
 				overlays.get(dataArray.get(i)).remove();
 				overlays.remove(dataArray.get(i));
+				if(popWindowId!=null&&dataArray.get(i).equals(popWindowId)){
+					baiduMap.hideInfoWindow();
+				}
 			} else {
 				DoServiceContainer.getLogEngine().writeError("do_BaiduMapView removeMarker \r\n", new Exception("标记id:" + dataArray.get(i) + "不存在"));
 			}
@@ -319,8 +324,10 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	 */
 	@Override
 	public void removeAll(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
+		baiduMap.hideInfoWindow();
 		overlays.clear();
 		baiduMap.clear();
+		
 	}
 
 	private void doBaiduMapView_TouchMarker(String id) {
@@ -332,7 +339,8 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	private Bitmap getLocalBitmap(String local) throws Exception {
 		Bitmap bitmap = null;
 		if (null == DoIOHelper.getHttpUrlPath(local) && local != null && !"".equals(local)) {
-			bitmap = DoImageLoadHelper.getInstance().loadLocal(local, -1, -1);
+			String path = DoIOHelper.getLocalFileFullPath(this.model.getCurrentPage().getCurrentApp(), local);
+			bitmap = DoImageLoadHelper.getInstance().loadLocal(path, -1, -1);
 		} else {
 			throw new Exception("标记缩略图,只支持本地图片");
 		}
