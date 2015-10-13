@@ -3,28 +3,27 @@ package doext.implement;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.widget.Button;
 import android.widget.FrameLayout;
-import core.DoServiceContainer;
-import core.helper.DoIOHelper;
-import core.helper.DoImageLoadHelper;
-import core.helper.DoJsonHelper;
-import core.helper.DoResourcesHelper;
-import core.helper.DoTextHelper;
-import core.helper.DoUIModuleHelper;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
+import com.baidu.location.BDLocation;
+import com.baidu.location.BDLocationListener;
+import com.baidu.location.LocationClient;
+import com.baidu.location.LocationClientOption;
+import com.baidu.location.LocationClientOption.LocationMode;
 import com.baidu.mapapi.SDKInitializer;
 import com.baidu.mapapi.map.BaiduMap;
 import com.baidu.mapapi.map.BitmapDescriptor;
 import com.baidu.mapapi.map.BitmapDescriptorFactory;
 import com.baidu.mapapi.map.InfoWindow;
+import com.baidu.mapapi.map.InfoWindow.OnInfoWindowClickListener;
 import com.baidu.mapapi.map.MapStatus;
 import com.baidu.mapapi.map.MapStatusUpdate;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
@@ -32,9 +31,15 @@ import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.Marker;
 import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.OverlayOptions;
-import com.baidu.mapapi.map.InfoWindow.OnInfoWindowClickListener;
 import com.baidu.mapapi.model.LatLng;
 
+import core.DoServiceContainer;
+import core.helper.DoIOHelper;
+import core.helper.DoImageLoadHelper;
+import core.helper.DoJsonHelper;
+import core.helper.DoResourcesHelper;
+import core.helper.DoTextHelper;
+import core.helper.DoUIModuleHelper;
 import core.interfaces.DoIModuleTypeID;
 import core.interfaces.DoIScriptEngine;
 import core.interfaces.DoIUIModuleView;
@@ -61,10 +66,15 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	private Map<String, Marker> overlays;
 	private Context mContext;
 	private String popWindowId;
-	
+
+	private LocationClient mLocClient;
+	private MyLocationListener mMyLocationListener;
+
 	public do_BaiduMapView_View(Context context) {
 		super(context);
 		SDKInitializer.initialize(context.getApplicationContext());
+		// 定位初始化
+		mLocClient = new LocationClient(DoServiceContainer.getPageViewFactory().getAppContext().getApplicationContext());
 		this.mContext = context;
 		initView(context);
 	}
@@ -105,7 +115,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 				});
 				popWindowId = id;
 				baiduMap.showInfoWindow(mInfoWindow);
-				
+
 				// 标记点击事件回调
 				doBaiduMapView_TouchMarker(id);
 
@@ -119,7 +129,6 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	 */
 	@Override
 	public void loadView(DoUIModule _doUIModule) throws Exception {
-
 		this.model = (do_BaiduMapView_MAbstract) _doUIModule;
 	}
 
@@ -174,6 +183,14 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			this.removeAll(_dictParas, _scriptEngine, _invokeResult);
 			return true;
 		}
+		if ("start".equals(_methodName)) {
+			this.start(_dictParas, _scriptEngine, _invokeResult);
+			return true;
+		}
+		if ("stop".equals(_methodName)) {
+			this.stop(_dictParas, _scriptEngine, _invokeResult);
+			return true;
+		}
 		return false;
 	}
 
@@ -194,6 +211,91 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	public boolean invokeAsyncMethod(String _methodName, JSONObject _dictParas, DoIScriptEngine _scriptEngine, String _callbackFuncName) {
 		// ...do something
 		return false;
+	}
+	
+	@Override
+	public void stop(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) {
+		stop();
+	}
+
+	private void stop() {
+		if (mLocClient != null && mLocClient.isStarted()) {
+			mLocClient.stop();
+			mLocClient.unRegisterLocationListener(mMyLocationListener);
+			mMyLocationListener = null;
+		}
+	}
+	
+	/**
+	 * 获取当前位置信息；
+	 * 
+	 * @throws Exception
+	 * 
+	 * @_dictParas 参数（K,V），可以通过此对象提供相关方法来获取参数值（Key：为参数名称）；
+	 * @_scriptEngine 当前Page JS上下文环境对象
+	 * @_callbackFuncName 回调函数名
+	 */
+	@Override
+	public void start(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
+		stop();
+		String _model = DoJsonHelper.getString(_dictParas, "model", "high");
+		boolean _isLoop = DoJsonHelper.getBoolean(_dictParas, "isLoop", false);
+		setLocationOption(_model, _isLoop);
+		mLocClient.start();
+		mMyLocationListener = new MyLocationListener();
+		mLocClient.registerLocationListener(mMyLocationListener);
+	}
+
+	// 设置Option
+	private void setLocationOption(String _model, boolean _isLoop) {
+		try {
+			LocationClientOption option = new LocationClientOption();
+			if ("high".equals(_model.trim())) {
+				option.setLocationMode(LocationMode.Hight_Accuracy);
+			} else if ("low".equals(_model.trim())) {
+				option.setLocationMode(LocationMode.Battery_Saving);
+			} else {
+				option.setLocationMode(LocationMode.Device_Sensors);
+			}
+
+			option.setCoorType("bd09ll");
+			option.setOpenGps(true);// 打开gps
+			option.setScanSpan(_isLoop ? 30000 : 300); // scan < 1000 为主动定位，>= 1000 为定时定位
+			option.setNeedDeviceDirect(true);
+			option.setIsNeedAddress(true);
+			mLocClient.setLocOption(option);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	private class MyLocationListener implements BDLocationListener {
+		private DoInvokeResult invokeResult;
+
+		public MyLocationListener() {
+			this.invokeResult = new DoInvokeResult(model.getUniqueKey());
+		}
+
+		@Override
+		public void onReceiveLocation(BDLocation location) {
+			try {
+				if (BDLocation.TypeServerError == location.getLocType()) { // 定位失败
+					invokeResult.setError("定位失败");
+				} else {
+					JSONObject _jsonNode = new JSONObject();
+					_jsonNode.put("latitude", location.getLatitude() + "");
+					_jsonNode.put("longitude", location.getLongitude() + "");
+					_jsonNode.put("address", location.getAddrStr() + "");
+					invokeResult.setResultNode(_jsonNode);
+				}
+			} catch (Exception e) {
+				invokeResult.setException(e);
+				DoServiceContainer.getLogEngine().writeError("do_BaiduLocation：getLocation \n", e);
+			} finally {
+				model.getEventCenter().fireEvent("result", invokeResult);
+			}
+
+		}
 	}
 
 	/**
@@ -306,7 +408,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			if (overlays.containsKey(dataArray.get(i))) {
 				overlays.get(dataArray.get(i)).remove();
 				overlays.remove(dataArray.get(i));
-				if(popWindowId!=null&&dataArray.get(i).equals(popWindowId)){
+				if (popWindowId != null && dataArray.get(i).equals(popWindowId)) {
 					baiduMap.hideInfoWindow();
 				}
 			} else {
@@ -327,7 +429,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		baiduMap.hideInfoWindow();
 		overlays.clear();
 		baiduMap.clear();
-		
+
 	}
 
 	private void doBaiduMapView_TouchMarker(String id) {
