@@ -34,6 +34,7 @@ import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.map.InfoWindow.OnInfoWindowClickListener;
 import com.baidu.mapapi.model.LatLng;
+import com.baidu.mapapi.utils.DistanceUtil;
 
 import core.interfaces.DoIModuleTypeID;
 import core.interfaces.DoIScriptEngine;
@@ -61,7 +62,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	private Map<String, Marker> overlays;
 	private Context mContext;
 	private String popWindowId;
-	
+
 	public do_BaiduMapView_View(Context context) {
 		super(context);
 		SDKInitializer.initialize(context.getApplicationContext());
@@ -105,7 +106,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 				});
 				popWindowId = id;
 				baiduMap.showInfoWindow(mInfoWindow);
-				
+
 				// 标记点击事件回调
 				doBaiduMapView_TouchMarker(id);
 
@@ -146,6 +147,15 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			int _zoomLevel = DoTextHelper.strToInt(_changedValues.get("zoomLevel"), 10);
 			baiduMap.setMapStatus(MapStatusUpdateFactory.newMapStatus(new MapStatus.Builder().zoom(_zoomLevel).build()));
 		}
+
+		if (_changedValues.containsKey("mapType")) {
+			String _mapType = _changedValues.get("mapType");
+			if ("satellite".equals(_mapType)) {
+				baiduMap.setMapType(BaiduMap.MAP_TYPE_SATELLITE);
+			} else {
+				baiduMap.setMapType(BaiduMap.MAP_TYPE_NORMAL);
+			}
+		}
 	}
 
 	/**
@@ -172,6 +182,10 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		}
 		if ("removeAll".equals(_methodName)) {
 			this.removeAll(_dictParas, _scriptEngine, _invokeResult);
+			return true;
+		}
+		if ("getDistance".equals(_methodName)) {
+			this.getDistance(_dictParas, _scriptEngine, _invokeResult);
 			return true;
 		}
 		return false;
@@ -306,7 +320,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			if (overlays.containsKey(dataArray.get(i))) {
 				overlays.get(dataArray.get(i)).remove();
 				overlays.remove(dataArray.get(i));
-				if(popWindowId!=null&&dataArray.get(i).equals(popWindowId)){
+				if (popWindowId != null && dataArray.get(i).equals(popWindowId)) {
 					baiduMap.hideInfoWindow();
 				}
 			} else {
@@ -327,7 +341,31 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		baiduMap.hideInfoWindow();
 		overlays.clear();
 		baiduMap.clear();
-		
+
+	}
+
+	@Override
+	public void getDistance(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
+		String _startPoint = DoJsonHelper.getString(_dictParas, "startPoint", null);
+		String _endPoint = DoJsonHelper.getString(_dictParas, "endPoint", null);
+		if (_startPoint == null || _endPoint == null) {
+			throw new Exception("startPoint 或  endPoint 参数值不能为空！");
+		}
+		String[] _latLng1 = _startPoint.split(",");
+		String[] _latLng2 = _endPoint.split(",");
+		if (_latLng1 == null || _latLng2 == null || _latLng1.length != 2 || _latLng2.length != 2) {
+			throw new Exception("startPoint 或  endPoint 参数值非法！");
+		}
+		double _p1_lat = DoTextHelper.strToDouble(_latLng1[0], 0);
+		double _p1_lng = DoTextHelper.strToDouble(_latLng1[1], 0);
+		double _p2_lat = DoTextHelper.strToDouble(_latLng2[0], 0);
+		double _p2_lng = DoTextHelper.strToDouble(_latLng2[1], 0);
+
+		LatLng _p1 = new LatLng(_p1_lat, _p1_lng);
+		LatLng _p2 = new LatLng(_p2_lat, _p2_lng);
+		double _distance = DistanceUtil.getDistance(_p1, _p2);
+
+		_invokeResult.setResultFloat(_distance);
 	}
 
 	private void doBaiduMapView_TouchMarker(String id) {

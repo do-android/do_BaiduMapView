@@ -19,5 +19,6 @@ public abstract class do_BaiduMapView_MAbstract extends DoUIModule{
         super.onInit();
         //注册属性
 		this.registProperty(new DoProperty("zoomLevel", PropertyDataType.String, "10", false));
+		this.registProperty(new DoProperty("mapType", PropertyDataType.String, "standard", false));
 	}
 }
