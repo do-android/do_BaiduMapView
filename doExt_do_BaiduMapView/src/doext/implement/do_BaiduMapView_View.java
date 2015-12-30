@@ -7,9 +7,11 @@ import java.util.Map;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.widget.Button;
 import android.widget.FrameLayout;
@@ -217,9 +219,20 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	 *                    DoInvokeResult(this.model.getUniqueKey());
 	 */
 	@Override
-	public boolean invokeAsyncMethod(String _methodName, JSONObject _dictParas, DoIScriptEngine _scriptEngine, String _callbackFuncName) throws Exception {
-		if ("poiSearch".equals(_methodName)) { // 执行动画
-			this.poiSearch(_dictParas, _scriptEngine, _callbackFuncName);
+	public boolean invokeAsyncMethod(String _methodName, final JSONObject _dictParas, final DoIScriptEngine _scriptEngine, final String _callbackFuncName) throws Exception {
+		if ("poiSearch".equals(_methodName)) {
+			Activity _activity = (Activity) mContext;
+			// 0:城市POI检索;1:在矩形范围内POI检索;2:根据中心点、半径POI检索;
+			_activity.runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						poiSearch(_dictParas, _scriptEngine, _callbackFuncName);
+					} catch (Exception e) {
+						DoServiceContainer.getLogEngine().writeError("do_BaiduMapView poiSearch \r\n", e);
+					}
+				}
+			});
 			return true;
 		}
 		return false;
@@ -234,6 +247,10 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		overlays.clear();
 		baiduMap.clear();
 		mapView.onDestroy();
+		if (null != mPoiSearch) {
+			mPoiSearch.destroy();
+			mPoiSearch = null;
+		}
 	}
 
 	/**
@@ -410,6 +427,12 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	@Override
 	public void poiSearch(JSONObject _dictParas, DoIScriptEngine _scriptEngine, String _callbackFuncName) throws Exception {
 		int _type = DoJsonHelper.getInt(_dictParas, "type", 0);
+		int _pageNum = DoJsonHelper.getInt(_dictParas, "pageNum ", 10);
+		int _pageIndex = DoJsonHelper.getInt(_dictParas, "pageIndex", 0);
+		String _keyword = DoJsonHelper.getString(_dictParas, "keyword", "");
+		if (TextUtils.isEmpty(_keyword)) {
+			throw new Exception("keyword 参数不能为空！");
+		}
 		JSONObject _param = DoJsonHelper.getJSONObject(_dictParas, "param");
 		if (_param == null) {
 			throw new Exception("param 参数不能为空！");
@@ -419,24 +442,21 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			mPoiSearch = PoiSearch.newInstance();
 			mPoiSearch.setOnGetPoiSearchResultListener(new MyOnGetPoiSearchResultListener(_scriptEngine, _callbackFuncName));
 		}
+
 		switch (_type) {
 		case 0:
 			PoiCitySearchOption _ctiySearchOption = new PoiCitySearchOption();
-			if (_param.has("keyword")) {
-				_ctiySearchOption.keyword(_param.getString("keyword"));
-			}
+			_ctiySearchOption.keyword(_keyword);
 			if (_param.has("city")) {
 				_ctiySearchOption.city(_param.getString("city"));
 			}
+			_ctiySearchOption.pageNum(_pageNum);
+			_ctiySearchOption.pageCapacity(_pageIndex);
 			mPoiSearch.searchInCity(_ctiySearchOption);
 			break;
 		case 1:
 			PoiBoundSearchOption _boundSearchOption = new PoiBoundSearchOption();
-
-			if (_param.has("keyword")) {
-				_boundSearchOption.keyword(_param.getString("keyword"));
-			}
-
+			_boundSearchOption.keyword(_keyword);
 			if (_param.has("leftBottom") && _param.has("rightTop")) {
 
 				String _northeast = _param.getString("rightTop");
@@ -456,15 +476,14 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 				_builder.include(new LatLng(_p1_lat, _p1_lng)).include(new LatLng(_p2_lat, _p2_lng));
 				_boundSearchOption.bound(_builder.build());
 			}
-
+			_boundSearchOption.pageNum(_pageNum);
+			_boundSearchOption.pageCapacity(_pageIndex);
 			mPoiSearch.searchInBound(_boundSearchOption);
 			break;
 		case 2:
 
 			PoiNearbySearchOption _nearbySearchOption = new PoiNearbySearchOption();
-			if (_param.has("keyword")) {
-				_nearbySearchOption.keyword(_param.getString("keyword"));
-			}
+			_nearbySearchOption.keyword(_keyword);
 
 			if (_param.has("location")) {
 				String _location = _param.getString("location");
@@ -481,7 +500,8 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			if (_param.has("radius")) {
 				_nearbySearchOption.radius(DoJsonHelper.getInt(_param, "radius", 0));
 			}
-
+			_nearbySearchOption.pageNum(_pageNum);
+			_nearbySearchOption.pageCapacity(_pageIndex);
 			mPoiSearch.searchNearby(_nearbySearchOption);
 
 			break;
