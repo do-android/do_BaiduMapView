@@ -1,7 +1,11 @@
 package doext.implement;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -9,22 +13,13 @@ import android.os.Bundle;
 import android.view.Gravity;
 import android.widget.Button;
 import android.widget.FrameLayout;
-import core.DoServiceContainer;
-import core.helper.DoIOHelper;
-import core.helper.DoImageLoadHelper;
-import core.helper.DoJsonHelper;
-import core.helper.DoResourcesHelper;
-import core.helper.DoTextHelper;
-import core.helper.DoUIModuleHelper;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import com.baidu.mapapi.SDKInitializer;
 import com.baidu.mapapi.map.BaiduMap;
 import com.baidu.mapapi.map.BitmapDescriptor;
 import com.baidu.mapapi.map.BitmapDescriptorFactory;
 import com.baidu.mapapi.map.InfoWindow;
+import com.baidu.mapapi.map.InfoWindow.OnInfoWindowClickListener;
 import com.baidu.mapapi.map.MapStatus;
 import com.baidu.mapapi.map.MapStatusUpdate;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
@@ -32,10 +27,25 @@ import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.Marker;
 import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.OverlayOptions;
-import com.baidu.mapapi.map.InfoWindow.OnInfoWindowClickListener;
 import com.baidu.mapapi.model.LatLng;
+import com.baidu.mapapi.model.LatLngBounds;
+import com.baidu.mapapi.search.core.PoiInfo;
+import com.baidu.mapapi.search.poi.OnGetPoiSearchResultListener;
+import com.baidu.mapapi.search.poi.PoiBoundSearchOption;
+import com.baidu.mapapi.search.poi.PoiCitySearchOption;
+import com.baidu.mapapi.search.poi.PoiDetailResult;
+import com.baidu.mapapi.search.poi.PoiNearbySearchOption;
+import com.baidu.mapapi.search.poi.PoiResult;
+import com.baidu.mapapi.search.poi.PoiSearch;
 import com.baidu.mapapi.utils.DistanceUtil;
 
+import core.DoServiceContainer;
+import core.helper.DoIOHelper;
+import core.helper.DoImageLoadHelper;
+import core.helper.DoJsonHelper;
+import core.helper.DoResourcesHelper;
+import core.helper.DoTextHelper;
+import core.helper.DoUIModuleHelper;
 import core.interfaces.DoIModuleTypeID;
 import core.interfaces.DoIScriptEngine;
 import core.interfaces.DoIUIModuleView;
@@ -194,6 +204,8 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	/**
 	 * 异步方法（通常都处理些耗时操作，避免UI线程阻塞），JS脚本调用该组件对象方法时会被调用， 可以根据_methodName调用相应的接口实现方法；
 	 * 
+	 * @throws Exception
+	 * 
 	 * @_methodName 方法名称
 	 * @_dictParas 参数（K,V）
 	 * @_scriptEngine 当前page JS上下文环境
@@ -205,8 +217,11 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	 *                    DoInvokeResult(this.model.getUniqueKey());
 	 */
 	@Override
-	public boolean invokeAsyncMethod(String _methodName, JSONObject _dictParas, DoIScriptEngine _scriptEngine, String _callbackFuncName) {
-		// ...do something
+	public boolean invokeAsyncMethod(String _methodName, JSONObject _dictParas, DoIScriptEngine _scriptEngine, String _callbackFuncName) throws Exception {
+		if ("poiSearch".equals(_methodName)) { // 执行动画
+			this.poiSearch(_dictParas, _scriptEngine, _callbackFuncName);
+			return true;
+		}
 		return false;
 	}
 
@@ -388,5 +403,130 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	@Override
 	public String getTypeID() {
 		return model.getTypeID();
+	}
+
+	private PoiSearch mPoiSearch;
+
+	@Override
+	public void poiSearch(JSONObject _dictParas, DoIScriptEngine _scriptEngine, String _callbackFuncName) throws Exception {
+		int _type = DoJsonHelper.getInt(_dictParas, "type", 0);
+		JSONObject _param = DoJsonHelper.getJSONObject(_dictParas, "param");
+		if (_param == null) {
+			throw new Exception("param 参数不能为空！");
+		}
+		// 0:城市POI检索;1:在矩形范围内POI检索;2:根据中心点、半径POI检索;
+		if (mPoiSearch == null) {
+			mPoiSearch = PoiSearch.newInstance();
+			mPoiSearch.setOnGetPoiSearchResultListener(new MyOnGetPoiSearchResultListener(_scriptEngine, _callbackFuncName));
+		}
+		switch (_type) {
+		case 0:
+			PoiCitySearchOption _ctiySearchOption = new PoiCitySearchOption();
+			if (_param.has("keyword")) {
+				_ctiySearchOption.keyword(_param.getString("keyword"));
+			}
+			if (_param.has("city")) {
+				_ctiySearchOption.city(_param.getString("city"));
+			}
+			mPoiSearch.searchInCity(_ctiySearchOption);
+			break;
+		case 1:
+			PoiBoundSearchOption _boundSearchOption = new PoiBoundSearchOption();
+
+			if (_param.has("keyword")) {
+				_boundSearchOption.keyword(_param.getString("keyword"));
+			}
+
+			if (_param.has("leftBottom") && _param.has("rightTop")) {
+
+				String _northeast = _param.getString("rightTop");
+				String _southwest = _param.getString("leftBottom");
+
+				String[] _latLng1 = _northeast.split(",");
+				String[] _latLng2 = _southwest.split(",");
+				if (_latLng1 == null || _latLng2 == null || _latLng1.length != 2 || _latLng2.length != 2) {
+					throw new Exception("rightTop 或  leftBottom 参数值非法！");
+				}
+				double _p1_lat = DoTextHelper.strToDouble(_latLng1[0], 0);
+				double _p1_lng = DoTextHelper.strToDouble(_latLng1[1], 0);
+				double _p2_lat = DoTextHelper.strToDouble(_latLng2[0], 0);
+				double _p2_lng = DoTextHelper.strToDouble(_latLng2[1], 0);
+
+				LatLngBounds.Builder _builder = new LatLngBounds.Builder();
+				_builder.include(new LatLng(_p1_lat, _p1_lng)).include(new LatLng(_p2_lat, _p2_lng));
+				_boundSearchOption.bound(_builder.build());
+			}
+
+			mPoiSearch.searchInBound(_boundSearchOption);
+			break;
+		case 2:
+
+			PoiNearbySearchOption _nearbySearchOption = new PoiNearbySearchOption();
+			if (_param.has("keyword")) {
+				_nearbySearchOption.keyword(_param.getString("keyword"));
+			}
+
+			if (_param.has("location")) {
+				String _location = _param.getString("location");
+
+				String[] _latLng1 = _location.split(",");
+				if (_latLng1 == null || _latLng1.length != 2) {
+					throw new Exception("location 参数值非法！");
+				}
+				double _p1_lat = DoTextHelper.strToDouble(_latLng1[0], 0);
+				double _p1_lng = DoTextHelper.strToDouble(_latLng1[1], 0);
+				_nearbySearchOption.location(new LatLng(_p1_lat, _p1_lng));
+			}
+
+			if (_param.has("radius")) {
+				_nearbySearchOption.radius(DoJsonHelper.getInt(_param, "radius", 0));
+			}
+
+			mPoiSearch.searchNearby(_nearbySearchOption);
+
+			break;
+		default:
+			throw new Exception("type 参数错误！");
+		}
+	}
+
+	private class MyOnGetPoiSearchResultListener implements OnGetPoiSearchResultListener {
+
+		private DoIScriptEngine scriptEngine;
+		private String callbackFuncName;
+
+		public MyOnGetPoiSearchResultListener(DoIScriptEngine _scriptEngine, String _callbackFuncName) {
+			this.scriptEngine = _scriptEngine;
+			this.callbackFuncName = _callbackFuncName;
+		}
+
+		public void onGetPoiResult(PoiResult result) {
+			// 获取POI检索结果
+//			name:"POI名称",pt:"POI坐标",address:"POI地址",city:"POI所在城市",phone:"POI电话号码"
+			List<PoiInfo> _poiList = result.getAllPoi();
+			JSONArray _array = new JSONArray();
+			DoInvokeResult _result = new DoInvokeResult(model.getUniqueKey());
+			try {
+				for (PoiInfo _info : _poiList) {
+					JSONObject _obj = new JSONObject();
+					_obj.put("name", _info.name);
+					_obj.put("pt", _info.location);
+					_obj.put("address", _info.address);
+					_obj.put("city", _info.city);
+					_obj.put("phone", _info.phoneNum);
+					_array.put(_obj);
+				}
+				_result.setResultArray(_array);
+			} catch (Exception e) {
+				_result.setException(e);
+				DoServiceContainer.getLogEngine().writeError("do_BaiduMapView poiSearch \n\t", e);
+			} finally {
+				this.scriptEngine.callback(callbackFuncName, _result);
+			}
+		}
+
+		public void onGetPoiDetailResult(PoiDetailResult result) {
+			// 获取Place详情页检索结果
+		}
 	}
 }
