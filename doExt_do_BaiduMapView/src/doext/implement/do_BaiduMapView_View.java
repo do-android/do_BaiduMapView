@@ -438,10 +438,8 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			throw new Exception("param 参数不能为空！");
 		}
 		// 0:城市POI检索;1:在矩形范围内POI检索;2:根据中心点、半径POI检索;
-		if (mPoiSearch == null) {
-			mPoiSearch = PoiSearch.newInstance();
-			mPoiSearch.setOnGetPoiSearchResultListener(new MyOnGetPoiSearchResultListener(_scriptEngine, _callbackFuncName));
-		}
+		mPoiSearch = PoiSearch.newInstance();
+		mPoiSearch.setOnGetPoiSearchResultListener(new MyOnGetPoiSearchResultListener(_scriptEngine, _callbackFuncName));
 
 		switch (_type) {
 		case 0:
