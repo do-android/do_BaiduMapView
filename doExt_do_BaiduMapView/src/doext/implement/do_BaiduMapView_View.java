@@ -427,8 +427,8 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	@Override
 	public void poiSearch(JSONObject _dictParas, DoIScriptEngine _scriptEngine, String _callbackFuncName) throws Exception {
 		int _type = DoJsonHelper.getInt(_dictParas, "type", 0);
-		int _pageNum = DoJsonHelper.getInt(_dictParas, "pageNum ", 10);
 		int _pageIndex = DoJsonHelper.getInt(_dictParas, "pageIndex", 0);
+		int _pageSize = DoJsonHelper.getInt(_dictParas, "pageSize", 10);
 		String _keyword = DoJsonHelper.getString(_dictParas, "keyword", "");
 		if (TextUtils.isEmpty(_keyword)) {
 			throw new Exception("keyword 参数不能为空！");
@@ -448,8 +448,8 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			if (_param.has("city")) {
 				_ctiySearchOption.city(_param.getString("city"));
 			}
-			_ctiySearchOption.pageNum(_pageNum);
-			_ctiySearchOption.pageCapacity(_pageIndex);
+			_ctiySearchOption.pageCapacity(_pageSize);
+			_ctiySearchOption.pageNum(_pageIndex);
 			mPoiSearch.searchInCity(_ctiySearchOption);
 			break;
 		case 1:
@@ -474,8 +474,8 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 				_builder.include(new LatLng(_p1_lat, _p1_lng)).include(new LatLng(_p2_lat, _p2_lng));
 				_boundSearchOption.bound(_builder.build());
 			}
-			_boundSearchOption.pageNum(_pageNum);
-			_boundSearchOption.pageCapacity(_pageIndex);
+			_boundSearchOption.pageCapacity(_pageSize);
+			_boundSearchOption.pageNum(_pageIndex);
 			mPoiSearch.searchInBound(_boundSearchOption);
 			break;
 		case 2:
@@ -498,8 +498,8 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			if (_param.has("radius")) {
 				_nearbySearchOption.radius(DoJsonHelper.getInt(_param, "radius", 0));
 			}
-			_nearbySearchOption.pageNum(_pageNum);
-			_nearbySearchOption.pageCapacity(_pageIndex);
+			_nearbySearchOption.pageCapacity(_pageSize);
+			_nearbySearchOption.pageNum(_pageIndex);
 			mPoiSearch.searchNearby(_nearbySearchOption);
 
 			break;
@@ -528,7 +528,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 				for (PoiInfo _info : _poiList) {
 					JSONObject _obj = new JSONObject();
 					_obj.put("name", _info.name);
-					_obj.put("pt", _info.location);
+					_obj.put("pt", _info.location.latitude + "," + _info.location.longitude);
 					_obj.put("address", _info.address);
 					_obj.put("city", _info.city);
 					_obj.put("phone", _info.phoneNum);
