@@ -18,10 +18,13 @@ import android.widget.FrameLayout;
 
 import com.baidu.mapapi.SDKInitializer;
 import com.baidu.mapapi.map.BaiduMap;
+import com.baidu.mapapi.map.BaiduMap.OnMapClickListener;
+import com.baidu.mapapi.map.BaiduMap.OnMapStatusChangeListener;
 import com.baidu.mapapi.map.BitmapDescriptor;
 import com.baidu.mapapi.map.BitmapDescriptorFactory;
 import com.baidu.mapapi.map.InfoWindow;
 import com.baidu.mapapi.map.InfoWindow.OnInfoWindowClickListener;
+import com.baidu.mapapi.map.MapPoi;
 import com.baidu.mapapi.map.MapStatus;
 import com.baidu.mapapi.map.MapStatusUpdate;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
@@ -125,6 +128,36 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 				return true;
 			}
 		});
+
+		baiduMap.setOnMapStatusChangeListener(new OnMapStatusChangeListener() {
+			@Override
+			public void onMapStatusChange(MapStatus status) {
+			}
+
+			@Override
+			public void onMapStatusChangeFinish(MapStatus status) {
+				model.setPropertyValue("zoomLevel", status.zoom + "");
+			}
+
+			@Override
+			public void onMapStatusChangeStart(MapStatus status) {
+
+			}
+		});
+
+		baiduMap.setOnMapClickListener(new OnMapClickListener() {
+
+			@Override
+			public boolean onMapPoiClick(MapPoi poi) {
+				doBaiduMapView_TouchMap(poi.getPosition());
+				return false;
+			}
+
+			@Override
+			public void onMapClick(LatLng latLng) {
+				doBaiduMapView_TouchMap(latLng);
+			}
+		});
 	}
 
 	/**
@@ -132,7 +165,6 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	 */
 	@Override
 	public void loadView(DoUIModule _doUIModule) throws Exception {
-
 		this.model = (do_BaiduMapView_MAbstract) _doUIModule;
 	}
 
@@ -398,6 +430,19 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		double _distance = DistanceUtil.getDistance(_p1, _p2);
 
 		_invokeResult.setResultFloat(_distance);
+	}
+
+	private void doBaiduMapView_TouchMap(LatLng latLng) {
+		try {
+			DoInvokeResult _invokeResult = new DoInvokeResult(model.getUniqueKey());
+			JSONObject _obj = new JSONObject();
+			_obj.put("latitude", latLng.latitude);
+			_obj.put("longitude", latLng.longitude);
+			_invokeResult.setResultNode(_obj);
+			model.getEventCenter().fireEvent("touchMap", _invokeResult);
+		} catch (Exception e) {
+			DoServiceContainer.getLogEngine().writeError("do_BaiduMapView_View touchMap event\n\t", e);
+		}
 	}
 
 	private void doBaiduMapView_TouchMarker(String id) {
