@@ -149,12 +149,14 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 
 			@Override
 			public boolean onMapPoiClick(MapPoi poi) {
+				baiduMap.hideInfoWindow();
 				doBaiduMapView_TouchMap(poi.getPosition());
 				return false;
 			}
 
 			@Override
 			public void onMapClick(LatLng latLng) {
+				baiduMap.hideInfoWindow();
 				doBaiduMapView_TouchMap(latLng);
 			}
 		});
