@@ -110,8 +110,9 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			public boolean onMarkerClick(Marker arg0) {
 				// 显示弹窗
 				Button _pop = new Button(mContext);
-				final String id = arg0.getExtraInfo().getString("id");
+				String id = arg0.getExtraInfo().getString("id");
 				String info = arg0.getExtraInfo().getString("info");
+				final String data = arg0.getExtraInfo().getString("data");
 				if (info != null)
 					_pop.setText(info);
 				_pop.setTextSize(13f);
@@ -121,14 +122,14 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 
 				InfoWindow mInfoWindow = new InfoWindow(BitmapDescriptorFactory.fromView(_pop), arg0.getPosition(), -47, new OnInfoWindowClickListener() {
 					public void onInfoWindowClick() {
-						doBaiduMapView_TouchMarker(id);
+						doBaiduMapView_TouchMarker(data);
 					}
 				});
 				popWindowId = id;
 				baiduMap.showInfoWindow(mInfoWindow);
 
 				// 标记点击事件回调
-				doBaiduMapView_TouchMarker(id);
+				doBaiduMapView_TouchMarker(data);
 
 				return true;
 			}
@@ -455,6 +456,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 				Bundle bundle = new Bundle();
 				bundle.putString("id", id);
 				bundle.putString("info", info);
+				bundle.putString("data", childData.toString());
 				// 构建Marker图标
 				BitmapDescriptor bitmap = BitmapDescriptorFactory.fromBitmap(getLocalBitmap(url));
 				// 构建MarkerOption，用于在地图上添加Marker
@@ -545,9 +547,13 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		}
 	}
 
-	private void doBaiduMapView_TouchMarker(String id) {
+	private void doBaiduMapView_TouchMarker(String data) {
 		DoInvokeResult _invokeResult = new DoInvokeResult(this.model.getUniqueKey());
-		_invokeResult.setResultText(id);
+		try {
+			_invokeResult.setResultNode(new JSONObject(data));
+		} catch (Exception e) {
+			_invokeResult.setException(e);
+		}
 		this.model.getEventCenter().fireEvent("touchMarker", _invokeResult);
 	}
 
