@@ -1,5 +1,6 @@
 package doext.implement;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,11 +18,13 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 
 import com.baidu.mapapi.SDKInitializer;
+import com.baidu.mapapi.map.ArcOptions;
 import com.baidu.mapapi.map.BaiduMap;
 import com.baidu.mapapi.map.BaiduMap.OnMapClickListener;
 import com.baidu.mapapi.map.BaiduMap.OnMapStatusChangeListener;
 import com.baidu.mapapi.map.BitmapDescriptor;
 import com.baidu.mapapi.map.BitmapDescriptorFactory;
+import com.baidu.mapapi.map.CircleOptions;
 import com.baidu.mapapi.map.InfoWindow;
 import com.baidu.mapapi.map.InfoWindow.OnInfoWindowClickListener;
 import com.baidu.mapapi.map.MapPoi;
@@ -32,6 +35,8 @@ import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.Marker;
 import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.OverlayOptions;
+import com.baidu.mapapi.map.PolygonOptions;
+import com.baidu.mapapi.map.PolylineOptions;
 import com.baidu.mapapi.model.LatLng;
 import com.baidu.mapapi.model.LatLngBounds;
 import com.baidu.mapapi.search.core.PoiInfo;
@@ -234,7 +239,99 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			this.getDistance(_dictParas, _scriptEngine, _invokeResult);
 			return true;
 		}
+		if ("addOverlay".equals(_methodName)) {
+			this.addOverlay(_dictParas, _scriptEngine, _invokeResult);
+			return true;
+		}
 		return false;
+	}
+
+	private void addOverlay(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
+		int _type = DoJsonHelper.getInt(_dictParas, "type", 0);
+		Object _param = DoJsonHelper.get(_dictParas, "param");
+		if (_param == null) {
+			_invokeResult.setError("param 参数不能为空！");
+			throw new Exception("param 参数不能为空！");
+		}
+		switch (_type) {
+		case 0:
+			if (!(_param instanceof JSONObject)) {
+				_invokeResult.setError("param 参数不合法");
+				throw new Exception("param 参数不合法");
+			}
+			JSONObject _circleParam = (JSONObject) _param;
+
+			int _radius = DoJsonHelper.getInt(_circleParam, "radius", 0);
+			CircleOptions _circleOptions = new CircleOptions();
+			_circleOptions.center(getLatLng(_circleParam, _invokeResult)).radius(_radius);
+			baiduMap.addOverlay(_circleOptions);
+			break;
+		case 1:
+			if (!(_param instanceof JSONArray)) {
+				_invokeResult.setError("param 参数不合法");
+				throw new Exception("param 参数不合法");
+			}
+			JSONArray _polylineParam = (JSONArray) _param;
+			List<LatLng> _points = new ArrayList<LatLng>();
+			for (int i = 0; i < _polylineParam.length(); i++) {
+				_points.add(getLatLng(_polylineParam.getJSONObject(i), _invokeResult));
+			}
+
+			if (_points.size() > 0) {
+				PolylineOptions _polylineOptions = new PolylineOptions();
+				_polylineOptions.points(_points);
+				baiduMap.addOverlay(_polylineOptions);
+			}
+
+			break;
+		case 2:
+			if (!(_param instanceof JSONArray)) {
+				_invokeResult.setError("param 参数不合法");
+				throw new Exception("param 参数不合法");
+			}
+			JSONArray _polygonParam = (JSONArray) _param;
+			_points = new ArrayList<LatLng>();
+			for (int i = 0; i < _polygonParam.length(); i++) {
+				_points.add(getLatLng(_polygonParam.getJSONObject(i), _invokeResult));
+			}
+
+			if (_points.size() > 0) {
+				PolygonOptions _polygonOptions = new PolygonOptions();
+				_polygonOptions.points(_points);
+				baiduMap.addOverlay(_polygonOptions);
+			}
+
+			break;
+		case 3:
+			if (!(_param instanceof JSONArray)) {
+				_invokeResult.setError("param 参数不合法");
+				throw new Exception("param 参数不合法");
+			}
+			JSONArray _arcParam = (JSONArray) _param;
+			if (_arcParam.length() < 3) {
+				_invokeResult.setError("param 参数不合法，必须是3个点的坐标");
+				throw new Exception("param 参数不合法，必须是3个点的坐标");
+			}
+			LatLng _start = getLatLng(_arcParam.getJSONObject(0), _invokeResult);
+			LatLng _middle = getLatLng(_arcParam.getJSONObject(1), _invokeResult);
+			LatLng _end = getLatLng(_arcParam.getJSONObject(2), _invokeResult);
+			ArcOptions _arcOptions = new ArcOptions();
+			_arcOptions.points(_start, _middle, _end);
+			baiduMap.addOverlay(_arcOptions);
+			break;
+		default:
+			throw new Exception("type 参数错误！");
+		}
+	}
+
+	private LatLng getLatLng(JSONObject _obj, DoInvokeResult _invokeResult) throws Exception {
+		double _latitude = DoJsonHelper.getDouble(_obj, "latitude", -1);
+		double _longitude = DoJsonHelper.getDouble(_obj, "longitude", -1);
+		if (_latitude > 0 && _longitude > 0) {
+			return new LatLng(_latitude, _longitude);
+		}
+		_invokeResult.setError("经纬度不合法");
+		throw new Exception("经纬度不合法");
 	}
 
 	/**
@@ -329,6 +426,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			_invokeResult.setResultBoolean(true);
 		} else {
 			_invokeResult.setResultBoolean(false);
+			_invokeResult.setError("中心点经纬度不合法");
 			throw new Exception("中心点经纬度不合法");
 		}
 
@@ -345,7 +443,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	public void addMarkers(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) {
 
 		try {
-			JSONArray dataArray = (JSONArray) _dictParas.get("data");
+			JSONArray dataArray = DoJsonHelper.getJSONArray(_dictParas, "data");
 			for (int i = 0; i < dataArray.length(); i++) {
 				JSONObject childData = dataArray.getJSONObject(i);
 				String id = DoJsonHelper.getString(childData, "id", "");
