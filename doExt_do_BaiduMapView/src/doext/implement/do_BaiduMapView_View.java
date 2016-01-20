@@ -251,24 +251,24 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 
 	private void addOverlay(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
 		int _type = DoJsonHelper.getInt(_dictParas, "type", 0);
-		Object _param = DoJsonHelper.get(_dictParas, "param");
+		Object _data = DoJsonHelper.get(_dictParas, "data");
 
 		int _fillColor = DoUIModuleHelper.getColorFromString(DoJsonHelper.getString(_dictParas, "fillColor", ""), Color.TRANSPARENT);
 		int _strokeColor = DoUIModuleHelper.getColorFromString(DoJsonHelper.getString(_dictParas, "strokeColor", ""), Color.BLACK);
 		int _width = DoJsonHelper.getInt(_dictParas, "width", 5);
 		boolean _isDash = DoJsonHelper.getBoolean(_dictParas, "isDash", false);
 
-		if (_param == null) {
-			_invokeResult.setError("param 参数不能为空！");
-			throw new Exception("param 参数不能为空！");
+		if (_data == null) {
+			_invokeResult.setError("data 参数不能为空！");
+			throw new Exception("data 参数不能为空！");
 		}
 		switch (_type) {
 		case 0:// 创建圆形覆盖物选项类
-			if (!(_param instanceof JSONObject)) {
-				_invokeResult.setError("param 参数不合法");
-				throw new Exception("param 参数不合法");
+			if (!(_data instanceof JSONObject)) {
+				_invokeResult.setError("data 参数不合法");
+				throw new Exception("data 参数不合法");
 			}
-			JSONObject _circleParam = (JSONObject) _param;
+			JSONObject _circleParam = (JSONObject) _data;
 
 			int _radius = DoJsonHelper.getInt(_circleParam, "radius", 0);
 			CircleOptions _circleOptions = new CircleOptions();
@@ -277,11 +277,11 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			baiduMap.addOverlay(_circleOptions);
 			break;
 		case 1: // 创建折线覆盖物选项类
-			if (!(_param instanceof JSONArray)) {
-				_invokeResult.setError("param 参数不合法");
-				throw new Exception("param 参数不合法");
+			if (!(_data instanceof JSONArray)) {
+				_invokeResult.setError("data 参数不合法");
+				throw new Exception("data 参数不合法");
 			}
-			JSONArray _polylineParam = (JSONArray) _param;
+			JSONArray _polylineParam = (JSONArray) _data;
 			List<LatLng> _points = new ArrayList<LatLng>();
 			for (int i = 0; i < _polylineParam.length(); i++) {
 				_points.add(getLatLng(_polylineParam.getJSONObject(i), _invokeResult));
@@ -298,11 +298,11 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 
 			break;
 		case 2:// 创建多边形覆盖物选项类
-			if (!(_param instanceof JSONArray)) {
-				_invokeResult.setError("param 参数不合法");
-				throw new Exception("param 参数不合法");
+			if (!(_data instanceof JSONArray)) {
+				_invokeResult.setError("data 参数不合法");
+				throw new Exception("data 参数不合法");
 			}
-			JSONArray _polygonParam = (JSONArray) _param;
+			JSONArray _polygonParam = (JSONArray) _data;
 			_points = new ArrayList<LatLng>();
 			for (int i = 0; i < _polygonParam.length(); i++) {
 				_points.add(getLatLng(_polygonParam.getJSONObject(i), _invokeResult));
@@ -317,14 +317,14 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 
 			break;
 		case 3: // 创建弧线覆盖物选项类
-			if (!(_param instanceof JSONArray)) {
-				_invokeResult.setError("param 参数不合法");
-				throw new Exception("param 参数不合法");
+			if (!(_data instanceof JSONArray)) {
+				_invokeResult.setError("data 参数不合法");
+				throw new Exception("data 参数不合法");
 			}
-			JSONArray _arcParam = (JSONArray) _param;
+			JSONArray _arcParam = (JSONArray) _data;
 			if (_arcParam.length() < 3) {
-				_invokeResult.setError("param 参数不合法，必须是3个点的坐标");
-				throw new Exception("param 参数不合法，必须是3个点的坐标");
+				_invokeResult.setError("data 参数不合法，必须是3个点的坐标");
+				throw new Exception("data 参数不合法，必须是3个点的坐标");
 			}
 			LatLng _start = getLatLng(_arcParam.getJSONObject(0), _invokeResult);
 			LatLng _middle = getLatLng(_arcParam.getJSONObject(1), _invokeResult);
