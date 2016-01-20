@@ -11,6 +11,7 @@ import org.json.JSONObject;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -37,6 +38,7 @@ import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.map.PolygonOptions;
 import com.baidu.mapapi.map.PolylineOptions;
+import com.baidu.mapapi.map.Stroke;
 import com.baidu.mapapi.model.LatLng;
 import com.baidu.mapapi.model.LatLngBounds;
 import com.baidu.mapapi.search.core.PoiInfo;
@@ -250,12 +252,18 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	private void addOverlay(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
 		int _type = DoJsonHelper.getInt(_dictParas, "type", 0);
 		Object _param = DoJsonHelper.get(_dictParas, "param");
+
+		int _fillColor = DoUIModuleHelper.getColorFromString(DoJsonHelper.getString(_dictParas, "fillColor", ""), Color.TRANSPARENT);
+		int _strokeColor = DoUIModuleHelper.getColorFromString(DoJsonHelper.getString(_dictParas, "strokeColor", ""), Color.BLACK);
+		int _width = DoJsonHelper.getInt(_dictParas, "width", 5);
+		boolean _isDash = DoJsonHelper.getBoolean(_dictParas, "isDash", false);
+
 		if (_param == null) {
 			_invokeResult.setError("param 参数不能为空！");
 			throw new Exception("param 参数不能为空！");
 		}
 		switch (_type) {
-		case 0:
+		case 0:// 创建圆形覆盖物选项类
 			if (!(_param instanceof JSONObject)) {
 				_invokeResult.setError("param 参数不合法");
 				throw new Exception("param 参数不合法");
@@ -265,9 +273,10 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			int _radius = DoJsonHelper.getInt(_circleParam, "radius", 0);
 			CircleOptions _circleOptions = new CircleOptions();
 			_circleOptions.center(getLatLng(_circleParam, _invokeResult)).radius(_radius);
+			_circleOptions.fillColor(_fillColor).stroke(new Stroke(_width, _strokeColor));
 			baiduMap.addOverlay(_circleOptions);
 			break;
-		case 1:
+		case 1: // 创建折线覆盖物选项类
 			if (!(_param instanceof JSONArray)) {
 				_invokeResult.setError("param 参数不合法");
 				throw new Exception("param 参数不合法");
@@ -281,11 +290,14 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			if (_points.size() > 0) {
 				PolylineOptions _polylineOptions = new PolylineOptions();
 				_polylineOptions.points(_points);
+				_polylineOptions.color(_strokeColor);
+				_polylineOptions.width(_width);
+				_polylineOptions.dottedLine(_isDash);
 				baiduMap.addOverlay(_polylineOptions);
 			}
 
 			break;
-		case 2:
+		case 2:// 创建多边形覆盖物选项类
 			if (!(_param instanceof JSONArray)) {
 				_invokeResult.setError("param 参数不合法");
 				throw new Exception("param 参数不合法");
@@ -299,11 +311,12 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			if (_points.size() > 0) {
 				PolygonOptions _polygonOptions = new PolygonOptions();
 				_polygonOptions.points(_points);
+				_polygonOptions.fillColor(_fillColor).stroke(new Stroke(_width, _strokeColor));
 				baiduMap.addOverlay(_polygonOptions);
 			}
 
 			break;
-		case 3:
+		case 3: // 创建弧线覆盖物选项类
 			if (!(_param instanceof JSONArray)) {
 				_invokeResult.setError("param 参数不合法");
 				throw new Exception("param 参数不合法");
@@ -318,6 +331,8 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			LatLng _end = getLatLng(_arcParam.getJSONObject(2), _invokeResult);
 			ArcOptions _arcOptions = new ArcOptions();
 			_arcOptions.points(_start, _middle, _end);
+			_arcOptions.color(_strokeColor);
+			_arcOptions.width(_width);
 			baiduMap.addOverlay(_arcOptions);
 			break;
 		default:
