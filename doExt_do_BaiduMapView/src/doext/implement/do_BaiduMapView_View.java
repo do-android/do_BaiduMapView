@@ -198,7 +198,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		DoUIModuleHelper.handleBasicViewProperChanged(this.model, _changedValues);
 
 		if (_changedValues.containsKey("zoomLevel")) {
-			int _zoomLevel = DoTextHelper.strToInt(_changedValues.get("zoomLevel"), 10);
+			float _zoomLevel = DoTextHelper.strToFloat(_changedValues.get("zoomLevel"), 10.0f);
 			baiduMap.setMapStatus(MapStatusUpdateFactory.newMapStatus(new MapStatus.Builder().zoom(_zoomLevel).build()));
 		}
 
