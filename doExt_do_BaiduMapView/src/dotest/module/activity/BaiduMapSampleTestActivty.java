@@ -7,7 +7,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
@@ -24,13 +23,11 @@ import core.object.DoInvokeResult;
 import core.object.DoUIModule;
 import doext.implement.do_BaiduMapView_Model;
 import doext.implement.do_BaiduMapView_View;
-import dotest.module.activity.DoTestActivity;
 import dotest.module.frame.debug.DoPage;
 import dotest.module.frame.debug.DoService;
 /**
  * webview组件测试样例
  */
-@SuppressLint("ShowToast")
 public class BaiduMapSampleTestActivty extends DoTestActivity{
 
 	@Override
