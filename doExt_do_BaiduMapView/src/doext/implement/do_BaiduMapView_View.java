@@ -35,6 +35,7 @@ import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.Marker;
 import com.baidu.mapapi.map.MarkerOptions;
+import com.baidu.mapapi.map.Overlay;
 import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.map.PolygonOptions;
 import com.baidu.mapapi.map.PolylineOptions;
@@ -81,7 +82,8 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	private do_BaiduMapView_MAbstract model;
 	private MapView mapView;
 	private BaiduMap baiduMap;
-	private Map<String, Marker> overlays;
+	private Map<String, Marker> markers;
+	private Map<String, Overlay> overlays;
 	private Context mContext;
 	private String popWindowId;
 
@@ -105,7 +107,8 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		baiduMap = mapView.getMap();
 		baiduMap.setMapType(BaiduMap.MAP_TYPE_NORMAL);
 		baiduMap.setMapStatus(MapStatusUpdateFactory.newMapStatus(new MapStatus.Builder().zoom(10).build()));
-		overlays = new HashMap<String, Marker>();
+		markers = new HashMap<String, Marker>();
+		overlays = new HashMap<String, Overlay>();
 		baiduMap.setOnMarkerClickListener(new BaiduMap.OnMarkerClickListener() {
 
 			@Override
@@ -246,10 +249,15 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			this.addOverlay(_dictParas, _scriptEngine, _invokeResult);
 			return true;
 		}
+		if ("removeOverlay".equals(_methodName)) {
+			this.removeOverlay(_dictParas, _scriptEngine, _invokeResult);
+			return true;
+		}
 		return false;
 	}
 
 	private void addOverlay(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
+		String _id = DoJsonHelper.getString(_dictParas, "id", "");
 		int _type = DoJsonHelper.getInt(_dictParas, "type", 0);
 		Object _data = DoJsonHelper.get(_dictParas, "data");
 
@@ -274,7 +282,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			CircleOptions _circleOptions = new CircleOptions();
 			_circleOptions.center(getLatLng(_circleParam, _invokeResult)).radius(_radius);
 			_circleOptions.fillColor(_fillColor).stroke(new Stroke(_width, _strokeColor));
-			baiduMap.addOverlay(_circleOptions);
+			overlays.put(_id, baiduMap.addOverlay(_circleOptions));
 			break;
 		case 1: // 创建折线覆盖物选项类
 			if (!(_data instanceof JSONArray)) {
@@ -293,7 +301,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 				_polylineOptions.color(_strokeColor);
 				_polylineOptions.width(_width);
 				_polylineOptions.dottedLine(_isDash);
-				baiduMap.addOverlay(_polylineOptions);
+				overlays.put(_id, baiduMap.addOverlay(_polylineOptions));
 			}
 
 			break;
@@ -312,7 +320,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 				PolygonOptions _polygonOptions = new PolygonOptions();
 				_polygonOptions.points(_points);
 				_polygonOptions.fillColor(_fillColor).stroke(new Stroke(_width, _strokeColor));
-				baiduMap.addOverlay(_polygonOptions);
+				overlays.put(_id, baiduMap.addOverlay(_polygonOptions));
 			}
 
 			break;
@@ -333,7 +341,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			_arcOptions.points(_start, _middle, _end);
 			_arcOptions.color(_strokeColor);
 			_arcOptions.width(_width);
-			baiduMap.addOverlay(_arcOptions);
+			overlays.put(_id, baiduMap.addOverlay(_arcOptions));
 			break;
 		default:
 			throw new Exception("type 参数错误！");
@@ -391,6 +399,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	@Override
 	public void onDispose() {
 		// ...do something
+		markers.clear();
 		overlays.clear();
 		baiduMap.clear();
 		mapView.onDestroy();
@@ -478,7 +487,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 				OverlayOptions option = new MarkerOptions().position(latLng).icon(bitmap).title(id).zIndex(6).extraInfo(bundle).perspective(true);
 				// 在地图上添加Marker，并显示
 				Marker marker = (Marker) baiduMap.addOverlay(option);
-				overlays.put(id, marker);
+				markers.put(id, marker);
 			}
 		} catch (Exception e) {
 			DoServiceContainer.getLogEngine().writeError("添加一组标记异常", e);
@@ -496,16 +505,34 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	 */
 	@Override
 	public void removeMarker(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
-		JSONArray dataArray = DoJsonHelper.getJSONArray(_dictParas, "ids");
-		for (int i = 0; i < dataArray.length(); i++) {
-			if (overlays.containsKey(dataArray.get(i))) {
-				overlays.get(dataArray.get(i)).remove();
-				overlays.remove(dataArray.get(i));
-				if (popWindowId != null && dataArray.get(i).equals(popWindowId)) {
+		JSONArray _ids = DoJsonHelper.getJSONArray(_dictParas, "ids");
+		for (int i = 0; i < _ids.length(); i++) {
+			String _id = _ids.getString(i);
+			if (markers.containsKey(_id)) {
+				markers.get(_id).remove();
+				markers.remove(_id);
+				if (popWindowId != null && _id.equals(popWindowId)) {
 					baiduMap.hideInfoWindow();
 				}
 			} else {
-				DoServiceContainer.getLogEngine().writeError("do_BaiduMapView removeMarker \r\n", new Exception("标记id:" + dataArray.get(i) + "不存在"));
+				DoServiceContainer.getLogEngine().writeError("do_BaiduMapView removeMarker \r\n", new Exception("标记id:" + _id + "不存在"));
+			}
+		}
+	}
+
+	@Override
+	public void removeOverlay(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
+		JSONArray _ids = DoJsonHelper.getJSONArray(_dictParas, "ids");
+		for (int i = 0; i < _ids.length(); i++) {
+			String _id = _ids.getString(i);
+			if (overlays.containsKey(_id)) {
+				overlays.get(_id).remove();
+				overlays.remove(_id);
+				if (popWindowId != null && _id.equals(popWindowId)) {
+					baiduMap.hideInfoWindow();
+				}
+			} else {
+				DoServiceContainer.getLogEngine().writeError("do_BaiduMapView removeOverlay \r\n", new Exception("标记id:" + _id + "不存在"));
 			}
 		}
 	}
@@ -520,7 +547,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	@Override
 	public void removeAll(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
 		baiduMap.hideInfoWindow();
-		overlays.clear();
+		markers.clear();
 		baiduMap.clear();
 
 	}
