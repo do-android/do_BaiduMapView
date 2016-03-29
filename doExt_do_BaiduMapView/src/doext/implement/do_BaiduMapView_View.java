@@ -258,7 +258,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 
 	private void addOverlay(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
 		String _id = DoJsonHelper.getString(_dictParas, "id", "");
-		if (markers.containsKey(_id)) {
+		if (overlays.containsKey(_id)) {
 			DoServiceContainer.getLogEngine().writeError("do_BaiduMapView addOverlay", new Exception("id为" + _id + "已经存在！"));
 			return;
 		}
