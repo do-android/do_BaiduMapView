@@ -258,6 +258,10 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 
 	private void addOverlay(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
 		String _id = DoJsonHelper.getString(_dictParas, "id", "");
+		if (markers.containsKey(_id)) {
+			DoServiceContainer.getLogEngine().writeError("do_BaiduMapView addOverlay", new Exception("id为" + _id + "已经存在！"));
+			return;
+		}
 		int _type = DoJsonHelper.getInt(_dictParas, "type", 0);
 		Object _data = DoJsonHelper.get(_dictParas, "data");
 
@@ -472,6 +476,10 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			for (int i = 0; i < dataArray.length(); i++) {
 				JSONObject childData = dataArray.getJSONObject(i);
 				String id = DoJsonHelper.getString(childData, "id", "");
+				if (markers.containsKey(id)) {
+					DoServiceContainer.getLogEngine().writeError("do_BaiduMapView addMarkers \n\t", new Exception("id为" + id + "已经存在！"));
+					continue;
+				}
 				Double latitude = DoJsonHelper.getDouble(childData, "latitude", 39.915174);
 				Double longitude = DoJsonHelper.getDouble(childData, "longitude", 116.403901);
 				String url = DoJsonHelper.getString(childData, "url", "");
