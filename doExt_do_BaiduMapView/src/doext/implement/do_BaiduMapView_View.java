@@ -556,6 +556,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	public void removeAll(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
 		baiduMap.hideInfoWindow();
 		markers.clear();
+		overlays.clear();
 		baiduMap.clear();
 
 	}
