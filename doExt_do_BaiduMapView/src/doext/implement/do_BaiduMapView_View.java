@@ -32,7 +32,6 @@ import com.baidu.mapapi.map.MapPoi;
 import com.baidu.mapapi.map.MapStatus;
 import com.baidu.mapapi.map.MapStatusUpdate;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
-import com.baidu.mapapi.map.MapView;
 import com.baidu.mapapi.map.Marker;
 import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.Overlay;
@@ -40,6 +39,7 @@ import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.map.PolygonOptions;
 import com.baidu.mapapi.map.PolylineOptions;
 import com.baidu.mapapi.map.Stroke;
+import com.baidu.mapapi.map.TextureMapView;
 import com.baidu.mapapi.model.LatLng;
 import com.baidu.mapapi.model.LatLngBounds;
 import com.baidu.mapapi.search.core.PoiInfo;
@@ -80,7 +80,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	 * 每个UIview都会引用一个具体的model实例；
 	 */
 	private do_BaiduMapView_MAbstract model;
-	private MapView mapView;
+	private TextureMapView mapView;
 	private BaiduMap baiduMap;
 	private Map<String, Marker> markers;
 	private Map<String, Overlay> overlays;
@@ -100,7 +100,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	 * @param context
 	 */
 	private void initView(Context context) {
-		mapView = new MapView(context);
+		mapView = new TextureMapView(context);
 		mapView.showZoomControls(false);
 		FrameLayout.LayoutParams fParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);
 		this.addView(mapView, fParams);
