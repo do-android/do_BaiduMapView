@@ -43,6 +43,7 @@ import com.baidu.mapapi.map.TextureMapView;
 import com.baidu.mapapi.model.LatLng;
 import com.baidu.mapapi.model.LatLngBounds;
 import com.baidu.mapapi.search.core.PoiInfo;
+import com.baidu.mapapi.search.core.SearchResult;
 import com.baidu.mapapi.search.poi.OnGetPoiSearchResultListener;
 import com.baidu.mapapi.search.poi.PoiBoundSearchOption;
 import com.baidu.mapapi.search.poi.PoiCitySearchOption;
@@ -50,6 +51,17 @@ import com.baidu.mapapi.search.poi.PoiDetailResult;
 import com.baidu.mapapi.search.poi.PoiNearbySearchOption;
 import com.baidu.mapapi.search.poi.PoiResult;
 import com.baidu.mapapi.search.poi.PoiSearch;
+import com.baidu.mapapi.search.route.BikingRoutePlanOption;
+import com.baidu.mapapi.search.route.BikingRouteResult;
+import com.baidu.mapapi.search.route.DrivingRoutePlanOption;
+import com.baidu.mapapi.search.route.DrivingRouteResult;
+import com.baidu.mapapi.search.route.OnGetRoutePlanResultListener;
+import com.baidu.mapapi.search.route.PlanNode;
+import com.baidu.mapapi.search.route.RoutePlanSearch;
+import com.baidu.mapapi.search.route.TransitRoutePlanOption;
+import com.baidu.mapapi.search.route.TransitRouteResult;
+import com.baidu.mapapi.search.route.WalkingRoutePlanOption;
+import com.baidu.mapapi.search.route.WalkingRouteResult;
 import com.baidu.mapapi.utils.DistanceUtil;
 
 import core.DoServiceContainer;
@@ -66,6 +78,10 @@ import core.object.DoInvokeResult;
 import core.object.DoUIModule;
 import doext.define.do_BaiduMapView_IMethod;
 import doext.define.do_BaiduMapView_MAbstract;
+import doext.overlay.BikingRouteOverlay;
+import doext.overlay.DrivingRouteOverlay;
+import doext.overlay.TransitRouteOverlay;
+import doext.overlay.WalkingRouteOverlay;
 
 /**
  * 自定义扩展UIView组件实现类，此类必须继承相应VIEW类，并实现DoIUIModuleView,Do_Label_IMethod接口；
@@ -74,7 +90,7 @@ import doext.define.do_BaiduMapView_MAbstract;
  * 参数解释：@_messageName字符串事件名称，@jsonResult传递事件参数对象； 获取DoInvokeResult对象方式new
  * DoInvokeResult(this.model.getUniqueKey());
  */
-public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView, do_BaiduMapView_IMethod, DoIModuleTypeID {
+public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView, do_BaiduMapView_IMethod, DoIModuleTypeID, OnGetRoutePlanResultListener {
 
 	/**
 	 * 每个UIview都会引用一个具体的model实例；
@@ -86,6 +102,9 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	private Map<String, Overlay> overlays;
 	private Context mContext;
 	private String popWindowId;
+
+	// 搜索相关
+	RoutePlanSearch mSearch = null; // 搜索模块，也可去掉地图模块独立使用
 
 	public do_BaiduMapView_View(Context context) {
 		super(context);
@@ -171,6 +190,9 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 				doBaiduMapView_TouchMap(latLng);
 			}
 		});
+		// 初始化搜索模块，注册事件监听
+		mSearch = RoutePlanSearch.newInstance();
+		mSearch.setOnGetRoutePlanResultListener(this);
 	}
 
 	/**
@@ -394,6 +416,11 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			});
 			return true;
 		}
+		if ("routePlanSearch".equals(_methodName)) {
+			this.routePlanSearch(_dictParas, _scriptEngine, _callbackFuncName);
+			return true;
+		}
+
 		return false;
 	}
 
@@ -749,4 +776,132 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			// 获取Place详情页检索结果
 		}
 	}
+
+	@Override
+	public void routePlanSearch(JSONObject _dictParas, DoIScriptEngine _scriptEngine, String _callbackFuncName) throws Exception {
+		String _type = DoJsonHelper.getString(_dictParas, "type", "");// 路线检索类型,包括Bus(公交);Ride(骑行);Walk(步行);Drive(驾车)
+		String _startCityName = DoJsonHelper.getString(_dictParas, "startCityName", "");// 开始地点所在城市
+		String _endCityName = DoJsonHelper.getString(_dictParas, "endCityName", "");// 结束地点所在城市
+		String _startCitySite = DoJsonHelper.getString(_dictParas, "startCitySite", "");// 开始地点
+		String _endCitySite = DoJsonHelper.getString(_dictParas, "endCitySite", "");// 结束地点
+
+		if (!TextUtils.isEmpty(_type) && !TextUtils.isEmpty(_startCityName) && !TextUtils.isEmpty(_endCityName) && !TextUtils.isEmpty(_startCitySite) && !TextUtils.isEmpty(_endCitySite)) {
+			PlanNode stNode = PlanNode.withCityNameAndPlaceName(_startCityName, _startCitySite);
+			PlanNode enNode = PlanNode.withCityNameAndPlaceName(_endCityName, _endCitySite);
+			if (_type.equals("Bus")) {
+				mSearch.transitSearch((new TransitRoutePlanOption()).from(stNode).city(_startCityName).to(enNode));
+			} else if (_type.equals("Ride")) {
+				mSearch.bikingSearch((new BikingRoutePlanOption()).from(stNode).to(enNode));
+			} else if (_type.equals("Drive")) {
+				mSearch.drivingSearch((new DrivingRoutePlanOption()).from(stNode).to(enNode));
+			} else if (_type.equals("Walk")) {
+				mSearch.walkingSearch((new WalkingRoutePlanOption()).from(stNode).to(enNode));
+			} else {
+				DoServiceContainer.getLogEngine().writeError("routePlanSearch type类型不存在", new Exception());
+			}
+		} else {
+			DoServiceContainer.getLogEngine().writeError("请检查routePlanSearch参数是否为空", new Exception());
+		}
+	}
+
+	// 骑行路线
+	@Override
+	public void onGetBikingRouteResult(BikingRouteResult result) {
+		if (result == null || result.error != SearchResult.ERRORNO.NO_ERROR) {
+			DoServiceContainer.getLogEngine().writeError("onGetBikingRouteResult:抱歉，未找到结果", new Exception());
+		}
+		if (result.error == SearchResult.ERRORNO.AMBIGUOUS_ROURE_ADDR) {
+			// 起终点或途经点地址有岐义，通过以下接口获取建议查询信息
+			// result.getSuggestAddrInfo()
+			return;
+		}
+		if (result.error == SearchResult.ERRORNO.NO_ERROR) {
+			if (result.getRouteLines().size() == 1) {
+				BikingRouteOverlay overlay = new BikingRouteOverlay(baiduMap);
+				overlay.setData(result.getRouteLines().get(0));
+				overlay.addToMap();
+				overlay.zoomToSpan();
+			} else {
+				DoServiceContainer.getLogEngine().writeError("BikingRouteResult 结果数<0", new Exception());
+				return;
+			}
+		}
+	}
+
+	// 驾车路线
+	@Override
+	public void onGetDrivingRouteResult(DrivingRouteResult result) {
+		if (result == null || result.error != SearchResult.ERRORNO.NO_ERROR) {
+			DoServiceContainer.getLogEngine().writeError("onGetDrivingRouteResult:抱歉，未找到结果", new Exception());
+		}
+		if (result.error == SearchResult.ERRORNO.AMBIGUOUS_ROURE_ADDR) {
+			// 起终点或途经点地址有岐义，通过以下接口获取建议查询信息
+			// result.getSuggestAddrInfo()
+			return;
+		}
+		if (result.error == SearchResult.ERRORNO.NO_ERROR) {
+			if (result.getRouteLines().size() == 1) {
+				DrivingRouteOverlay overlay = new DrivingRouteOverlay(baiduMap);
+				baiduMap.setOnMarkerClickListener(overlay);
+				overlay.setData(result.getRouteLines().get(0));
+				overlay.addToMap();
+				overlay.zoomToSpan();
+			} else {
+				DoServiceContainer.getLogEngine().writeError("DrivingRouteResult 结果数<0", new Exception());
+				return;
+			}
+		}
+	}
+
+	// 公交路线
+	@Override
+	public void onGetTransitRouteResult(TransitRouteResult result) {
+		if (result == null || result.error != SearchResult.ERRORNO.NO_ERROR) {
+			DoServiceContainer.getLogEngine().writeError("onGetTransitRouteResult:抱歉，未找到结果", new Exception());
+		}
+		if (result.error == SearchResult.ERRORNO.AMBIGUOUS_ROURE_ADDR) {
+			// 起终点或途经点地址有岐义，通过以下接口获取建议查询信息
+			// result.getSuggestAddrInfo()
+			return;
+		}
+		if (result.error == SearchResult.ERRORNO.NO_ERROR) {
+			if (result.getRouteLines().size() == 1) {
+				TransitRouteOverlay overlay = new TransitRouteOverlay(baiduMap);
+				baiduMap.setOnMarkerClickListener(overlay);
+				overlay.setData(result.getRouteLines().get(0));
+				overlay.addToMap();
+				overlay.zoomToSpan();
+			} else {
+				DoServiceContainer.getLogEngine().writeError("TransitRouteResult 结果数<0", new Exception());
+				return;
+			}
+		}
+	}
+
+	// 步行路线
+	@Override
+	public void onGetWalkingRouteResult(WalkingRouteResult result) {
+		if (result == null || result.error != SearchResult.ERRORNO.NO_ERROR) {
+			DoServiceContainer.getLogEngine().writeError("onGetWalkingRouteResult:抱歉，未找到结果", new Exception());
+		}
+		if (result.error == SearchResult.ERRORNO.AMBIGUOUS_ROURE_ADDR) {
+			// 起终点或途经点地址有岐义，通过以下接口获取建议查询信息
+			// result.getSuggestAddrInfo()
+			return;
+		}
+		if (result.error == SearchResult.ERRORNO.NO_ERROR) {
+			if (result.getRouteLines().size() == 1) {
+				WalkingRouteOverlay overlay = new WalkingRouteOverlay(baiduMap);
+				baiduMap.setOnMarkerClickListener(overlay);
+				overlay.setData(result.getRouteLines().get(0));
+				overlay.addToMap();
+				overlay.zoomToSpan();
+
+			} else {
+				DoServiceContainer.getLogEngine().writeError("WalkingRouteResult 结果数<0", new Exception());
+				return;
+			}
+		}
+	}
+
 }
