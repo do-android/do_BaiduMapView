@@ -816,11 +816,13 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			return;
 		}
 		if (result.error == SearchResult.ERRORNO.NO_ERROR) {
-			if (result.getRouteLines().size() == 1) {
+			if (result.getRouteLines().size() >= 1) {
+
 				BikingRouteOverlay overlay = new BikingRouteOverlay(baiduMap);
 				overlay.setData(result.getRouteLines().get(0));
 				overlay.addToMap();
 				overlay.zoomToSpan();
+
 			} else {
 				DoServiceContainer.getLogEngine().writeError("BikingRouteResult 结果数<0", new Exception());
 				return;
@@ -840,7 +842,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			return;
 		}
 		if (result.error == SearchResult.ERRORNO.NO_ERROR) {
-			if (result.getRouteLines().size() == 1) {
+			if (result.getRouteLines().size() >= 1) {
 				DrivingRouteOverlay overlay = new DrivingRouteOverlay(baiduMap);
 				baiduMap.setOnMarkerClickListener(overlay);
 				overlay.setData(result.getRouteLines().get(0));
@@ -865,7 +867,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			return;
 		}
 		if (result.error == SearchResult.ERRORNO.NO_ERROR) {
-			if (result.getRouteLines().size() == 1) {
+			if (result.getRouteLines().size() >= 1) {
 				TransitRouteOverlay overlay = new TransitRouteOverlay(baiduMap);
 				baiduMap.setOnMarkerClickListener(overlay);
 				overlay.setData(result.getRouteLines().get(0));
@@ -890,13 +892,12 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			return;
 		}
 		if (result.error == SearchResult.ERRORNO.NO_ERROR) {
-			if (result.getRouteLines().size() == 1) {
+			if (result.getRouteLines().size() >= 1) {
 				WalkingRouteOverlay overlay = new WalkingRouteOverlay(baiduMap);
 				baiduMap.setOnMarkerClickListener(overlay);
 				overlay.setData(result.getRouteLines().get(0));
 				overlay.addToMap();
 				overlay.zoomToSpan();
-
 			} else {
 				DoServiceContainer.getLogEngine().writeError("WalkingRouteResult 结果数<0", new Exception());
 				return;
