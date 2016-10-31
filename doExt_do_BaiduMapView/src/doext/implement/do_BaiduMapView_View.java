@@ -797,10 +797,10 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			} else if (_type.equals("Walk")) {
 				mSearch.walkingSearch((new WalkingRoutePlanOption()).from(stNode).to(enNode));
 			} else {
-				DoServiceContainer.getLogEngine().writeError("routePlanSearch type类型不存在", new Exception());
+				DoServiceContainer.getLogEngine().writeError("do_BaiduMapView_View", new Exception("routePlanSearch type类型不存在"));
 			}
 		} else {
-			DoServiceContainer.getLogEngine().writeError("请检查routePlanSearch参数是否为空", new Exception());
+			DoServiceContainer.getLogEngine().writeError("do_BaiduMapView_View", new Exception("请检查routePlanSearch参数是否为空"));
 		}
 	}
 
@@ -808,7 +808,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	@Override
 	public void onGetBikingRouteResult(BikingRouteResult result) {
 		if (result == null || result.error != SearchResult.ERRORNO.NO_ERROR) {
-			DoServiceContainer.getLogEngine().writeError("onGetBikingRouteResult:抱歉，未找到结果", new Exception());
+			DoServiceContainer.getLogEngine().writeError("do_BaiduMapView_View", new Exception("onGetBikingRouteResult:抱歉，未找到结果"));
 		}
 		if (result.error == SearchResult.ERRORNO.AMBIGUOUS_ROURE_ADDR) {
 			// 起终点或途经点地址有岐义，通过以下接口获取建议查询信息
@@ -824,7 +824,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 				overlay.zoomToSpan();
 
 			} else {
-				DoServiceContainer.getLogEngine().writeError("BikingRouteResult 结果数<0", new Exception());
+				DoServiceContainer.getLogEngine().writeError("do_BaiduMapView_View", new Exception("BikingRouteResult 结果数<0"));
 				return;
 			}
 		}
@@ -834,7 +834,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	@Override
 	public void onGetDrivingRouteResult(DrivingRouteResult result) {
 		if (result == null || result.error != SearchResult.ERRORNO.NO_ERROR) {
-			DoServiceContainer.getLogEngine().writeError("onGetDrivingRouteResult:抱歉，未找到结果", new Exception());
+			DoServiceContainer.getLogEngine().writeError("do_BaiduMapView_View", new Exception("onGetDrivingRouteResult:抱歉，未找到结果"));
 		}
 		if (result.error == SearchResult.ERRORNO.AMBIGUOUS_ROURE_ADDR) {
 			// 起终点或途经点地址有岐义，通过以下接口获取建议查询信息
@@ -849,7 +849,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 				overlay.addToMap();
 				overlay.zoomToSpan();
 			} else {
-				DoServiceContainer.getLogEngine().writeError("DrivingRouteResult 结果数<0", new Exception());
+				DoServiceContainer.getLogEngine().writeError("do_BaiduMapView_View", new Exception("DrivingRouteResult 结果数<0"));
 				return;
 			}
 		}
@@ -859,7 +859,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	@Override
 	public void onGetTransitRouteResult(TransitRouteResult result) {
 		if (result == null || result.error != SearchResult.ERRORNO.NO_ERROR) {
-			DoServiceContainer.getLogEngine().writeError("onGetTransitRouteResult:抱歉，未找到结果", new Exception());
+			DoServiceContainer.getLogEngine().writeError("do_BaiduMapView_View", new Exception("onGetTransitRouteResult:抱歉，未找到结果"));
 		}
 		if (result.error == SearchResult.ERRORNO.AMBIGUOUS_ROURE_ADDR) {
 			// 起终点或途经点地址有岐义，通过以下接口获取建议查询信息
@@ -874,7 +874,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 				overlay.addToMap();
 				overlay.zoomToSpan();
 			} else {
-				DoServiceContainer.getLogEngine().writeError("TransitRouteResult 结果数<0", new Exception());
+				DoServiceContainer.getLogEngine().writeError("do_BaiduMapView_View", new Exception("TransitRouteResult 结果数<0"));
 				return;
 			}
 		}
@@ -884,7 +884,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	@Override
 	public void onGetWalkingRouteResult(WalkingRouteResult result) {
 		if (result == null || result.error != SearchResult.ERRORNO.NO_ERROR) {
-			DoServiceContainer.getLogEngine().writeError("onGetWalkingRouteResult:抱歉，未找到结果", new Exception());
+			DoServiceContainer.getLogEngine().writeError("do_BaiduMapView_View", new Exception("onGetWalkingRouteResult:抱歉，未找到结果"));
 		}
 		if (result.error == SearchResult.ERRORNO.AMBIGUOUS_ROURE_ADDR) {
 			// 起终点或途经点地址有岐义，通过以下接口获取建议查询信息
@@ -899,7 +899,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 				overlay.addToMap();
 				overlay.zoomToSpan();
 			} else {
-				DoServiceContainer.getLogEngine().writeError("WalkingRouteResult 结果数<0", new Exception());
+				DoServiceContainer.getLogEngine().writeError("do_BaiduMapView_View", new Exception("WalkingRouteResult 结果数<0"));
 				return;
 			}
 		}
