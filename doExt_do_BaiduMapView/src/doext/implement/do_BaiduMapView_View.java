@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -97,6 +99,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	 */
 	private do_BaiduMapView_MAbstract model;
 	private TextureMapView mapView;
+//	private MapView mapView;
 	private BaiduMap baiduMap;
 	private Map<String, Marker> markers;
 	private Map<String, Overlay> overlays;
@@ -120,6 +123,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	 */
 	private void initView(Context context) {
 		mapView = new TextureMapView(context);
+//		mapView = new MapView(context);
 		mapView.showZoomControls(false);
 		FrameLayout.LayoutParams fParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);
 		this.addView(mapView, fParams);
@@ -134,7 +138,12 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			public boolean onMarkerClick(Marker arg0) {
 				// 显示弹窗
 				Button _pop = new Button(mContext);
-				String id = arg0.getExtraInfo().getString("id");
+				String id;
+				try {
+					id = arg0.getExtraInfo().getString("id");
+				} catch (Exception e) {
+					return false;
+				}
 				String info = arg0.getExtraInfo().getString("info");
 				final String data = arg0.getExtraInfo().getString("data");
 				if (info != null)
@@ -193,6 +202,65 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		// 初始化搜索模块，注册事件监听
 		mSearch = RoutePlanSearch.newInstance();
 		mSearch.setOnGetRoutePlanResultListener(this);
+
+		baiduMap.setOnMapStatusChangeListener(listener);
+	}
+
+	OnMapStatusChangeListener listener = new OnMapStatusChangeListener() {
+		/**
+		 * 手势操作地图，设置地图状态等操作导致地图状态开始改变。
+		 * 
+		 * @param status
+		 *            地图状态改变开始时的地图状态
+		 */
+		public void onMapStatusChangeStart(MapStatus status) {
+		}
+
+		/**
+		 * 地图状态变化中
+		 * 
+		 * @param status
+		 *            当前地图状态
+		 */
+		public void onMapStatusChange(MapStatus status) {
+		}
+
+		/**
+		 * 地图状态改变结束
+		 * 
+		 * @param status
+		 *            地图状态改变结束后的地图状态
+		 */
+		public void onMapStatusChangeFinish(MapStatus status) {
+			String _str = status.toString();
+			String _regex = "target lat: (.*)\ntarget lng";
+			String _regex2 = "target lng: (.*)\ntarget screen x";
+			String _latitude = latlng(_regex, _str);
+			String _longitude = latlng(_regex2, _str);
+			doBaiduMapView_RegionChange(_latitude, _longitude);
+		}
+	};
+
+	private String latlng(String regexStr, String str) {
+		Pattern pattern = Pattern.compile(regexStr);
+		Matcher matcher = pattern.matcher(str);
+		while (matcher.find()) {
+			str = matcher.group(1);
+		}
+		return str;
+	}
+
+	private void doBaiduMapView_RegionChange(String latitude, String longitude) {
+		try {
+			DoInvokeResult _invokeResult = new DoInvokeResult(model.getUniqueKey());
+			JSONObject _obj = new JSONObject();
+			_obj.put("latitude", latitude);
+			_obj.put("longitude", longitude);
+			_invokeResult.setResultNode(_obj);
+			model.getEventCenter().fireEvent("regionChange", _invokeResult);
+		} catch (Exception e) {
+			DoServiceContainer.getLogEngine().writeError("do_BaiduMapView_View regionChange event\n\t", e);
+		}
 	}
 
 	/**
@@ -844,7 +912,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		if (result.error == SearchResult.ERRORNO.NO_ERROR) {
 			if (result.getRouteLines().size() >= 1) {
 				DrivingRouteOverlay overlay = new DrivingRouteOverlay(baiduMap);
-				baiduMap.setOnMarkerClickListener(overlay);
+//				baiduMap.setOnMarkerClickListener(overlay);
 				overlay.setData(result.getRouteLines().get(0));
 				overlay.addToMap();
 				overlay.zoomToSpan();
@@ -869,7 +937,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		if (result.error == SearchResult.ERRORNO.NO_ERROR) {
 			if (result.getRouteLines().size() >= 1) {
 				TransitRouteOverlay overlay = new TransitRouteOverlay(baiduMap);
-				baiduMap.setOnMarkerClickListener(overlay);
+//				baiduMap.setOnMarkerClickListener(overlay);
 				overlay.setData(result.getRouteLines().get(0));
 				overlay.addToMap();
 				overlay.zoomToSpan();
@@ -894,7 +962,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		if (result.error == SearchResult.ERRORNO.NO_ERROR) {
 			if (result.getRouteLines().size() >= 1) {
 				WalkingRouteOverlay overlay = new WalkingRouteOverlay(baiduMap);
-				baiduMap.setOnMarkerClickListener(overlay);
+//				baiduMap.setOnMarkerClickListener(overlay);
 				overlay.setData(result.getRouteLines().get(0));
 				overlay.addToMap();
 				overlay.zoomToSpan();
