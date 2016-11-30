@@ -854,7 +854,9 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		String _endCitySite = DoJsonHelper.getString(_dictParas, "endCitySite", "");// 结束地点
 
 		if (!TextUtils.isEmpty(_type) && !TextUtils.isEmpty(_startCityName) && !TextUtils.isEmpty(_endCityName) && !TextUtils.isEmpty(_startCitySite) && !TextUtils.isEmpty(_endCitySite)) {
+			
 			baiduMap.clear();
+			
 			PlanNode stNode = PlanNode.withCityNameAndPlaceName(_startCityName, _startCitySite);
 			PlanNode enNode = PlanNode.withCityNameAndPlaceName(_endCityName, _endCitySite);
 			if (_type.equals("Bus")) {
