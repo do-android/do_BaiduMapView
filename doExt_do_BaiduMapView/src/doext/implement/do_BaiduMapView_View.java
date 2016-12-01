@@ -138,10 +138,9 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			public boolean onMarkerClick(Marker arg0) {
 				// 显示弹窗
 				Button _pop = new Button(mContext);
-				String id;
-				try {
-					id = arg0.getExtraInfo().getString("id");
-				} catch (Exception e) {
+
+				String id = arg0.getExtraInfo().getString("id");
+				if (id == null) {
 					return false;
 				}
 				String info = arg0.getExtraInfo().getString("info");
@@ -854,9 +853,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		String _endCitySite = DoJsonHelper.getString(_dictParas, "endCitySite", "");// 结束地点
 
 		if (!TextUtils.isEmpty(_type) && !TextUtils.isEmpty(_startCityName) && !TextUtils.isEmpty(_endCityName) && !TextUtils.isEmpty(_startCitySite) && !TextUtils.isEmpty(_endCitySite)) {
-			
 			baiduMap.clear();
-			
 			PlanNode stNode = PlanNode.withCityNameAndPlaceName(_startCityName, _startCitySite);
 			PlanNode enNode = PlanNode.withCityNameAndPlaceName(_endCityName, _endCitySite);
 			if (_type.equals("Bus")) {
