@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -231,37 +229,24 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		 *            地图状态改变结束后的地图状态
 		 */
 		public void onMapStatusChangeFinish(MapStatus status) {
-			String _str = status.toString();
-			String _regex = "target lat: (.*)\ntarget lng";
-			String _regex2 = "target lng: (.*)\ntarget screen x";
-			String _latitude = latlng(_regex, _str);
-			String _longitude = latlng(_regex2, _str);
-			doBaiduMapView_RegionChange(_latitude, _longitude);
+			LatLng _latLng = status.target;
+			doBaiduMapView_RegionChange(_latLng);
+	 
 		}
 	};
-
-	private String latlng(String regexStr, String str) {
-		Pattern pattern = Pattern.compile(regexStr);
-		Matcher matcher = pattern.matcher(str);
-		while (matcher.find()) {
-			str = matcher.group(1);
-		}
-		return str;
-	}
-
-	private void doBaiduMapView_RegionChange(String latitude, String longitude) {
+ 
+	private void doBaiduMapView_RegionChange(LatLng latLng) {
 		try {
 			DoInvokeResult _invokeResult = new DoInvokeResult(model.getUniqueKey());
 			JSONObject _obj = new JSONObject();
-			_obj.put("latitude", latitude);
-			_obj.put("longitude", longitude);
+			_obj.put("latitude", latLng.latitude);
+			_obj.put("longitude", latLng.longitude);
 			_invokeResult.setResultNode(_obj);
 			model.getEventCenter().fireEvent("regionChange", _invokeResult);
 		} catch (Exception e) {
 			DoServiceContainer.getLogEngine().writeError("do_BaiduMapView_View regionChange event\n\t", e);
 		}
 	}
-
 	/**
 	 * 初始化加载view准备,_doUIModule是对应当前UIView的model实例
 	 */
