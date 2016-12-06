@@ -177,7 +177,6 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 
 			@Override
 			public void onMapStatusChangeStart(MapStatus status) {
-
 			}
 		});
 
@@ -203,6 +202,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		baiduMap.setOnMapStatusChangeListener(listener);
 	}
 
+	LatLng latLng;
 	OnMapStatusChangeListener listener = new OnMapStatusChangeListener() {
 		/**
 		 * 手势操作地图，设置地图状态等操作导致地图状态开始改变。
@@ -220,6 +220,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		 *            当前地图状态
 		 */
 		public void onMapStatusChange(MapStatus status) {
+			latLng = status.target;
 		}
 
 		/**
@@ -231,10 +232,9 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		public void onMapStatusChangeFinish(MapStatus status) {
 			LatLng _latLng = status.target;
 			doBaiduMapView_RegionChange(_latLng);
-	 
 		}
 	};
- 
+
 	private void doBaiduMapView_RegionChange(LatLng latLng) {
 		try {
 			DoInvokeResult _invokeResult = new DoInvokeResult(model.getUniqueKey());
@@ -247,6 +247,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			DoServiceContainer.getLogEngine().writeError("do_BaiduMapView_View regionChange event\n\t", e);
 		}
 	}
+
 	/**
 	 * 初始化加载view准备,_doUIModule是对应当前UIView的model实例
 	 */
@@ -277,6 +278,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		if (_changedValues.containsKey("zoomLevel")) {
 			float _zoomLevel = DoTextHelper.strToFloat(_changedValues.get("zoomLevel"), 10.0f);
 			baiduMap.setMapStatus(MapStatusUpdateFactory.newMapStatus(new MapStatus.Builder().zoom(_zoomLevel).build()));
+			doBaiduMapView_RegionChange(latLng);
 		}
 
 		if (_changedValues.containsKey("mapType")) {
@@ -524,6 +526,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		if (latitude > 0 && longitude > 0) {
 			// 设定中心点坐标
 			LatLng cenpt = new LatLng(latitude, longitude);
+			doBaiduMapView_RegionChange(cenpt);
 			// 定义地图状态
 			MapStatus mMapStatus = new MapStatus.Builder().target(cenpt).build();
 			// 定义MapStatusUpdate对象，以便描述地图状态将要发生的变化
