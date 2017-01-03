@@ -262,8 +262,8 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	@Override
 	public void onPropertiesChanged(Map<String, String> _changedValues) {
 		DoUIModuleHelper.handleBasicViewProperChanged(this.model, _changedValues);
-		if (_changedValues.containsKey("mapviewTheme")) {
-			themeTpye = DoTextHelper.strToInt(_changedValues.get("mapviewTheme"), 0);
+		if (_changedValues.containsKey("mapScene")) {
+			themeTpye = DoTextHelper.strToInt(_changedValues.get("mapScene"), 0);
 			initView(mContext, themeTpye);
 		}
 		if (_changedValues.containsKey("zoomLevel")) {
