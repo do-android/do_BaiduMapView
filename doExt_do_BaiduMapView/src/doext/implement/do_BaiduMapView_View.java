@@ -15,6 +15,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.Gravity;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.FrameLayout;
 
@@ -76,6 +77,7 @@ import core.interfaces.DoIModuleTypeID;
 import core.interfaces.DoIScriptEngine;
 import core.interfaces.DoIUIModuleView;
 import core.object.DoInvokeResult;
+import core.object.DoProperty;
 import core.object.DoUIModule;
 import doext.define.do_BaiduMapView_IMethod;
 import doext.define.do_BaiduMapView_MAbstract;
@@ -97,8 +99,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	 * 每个UIview都会引用一个具体的model实例；
 	 */
 	private do_BaiduMapView_MAbstract model;
-	private TextureMapView textureMapView;
-	private MapView mapView;
+	private ViewGroup mapView;
 	private BaiduMap baiduMap;
 	private Map<String, Marker> markers;
 	private Map<String, Overlay> overlays;
@@ -107,43 +108,50 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	private LatLng latLng;
 	// 搜索相关
 	RoutePlanSearch mSearch = null; // 搜索模块，也可去掉地图模块独立使用
-	private int themeTpye;
+
+	private int mapScene;
 
 	public do_BaiduMapView_View(Context context) {
 		super(context);
 		SDKInitializer.initialize(context.getApplicationContext());
 		this.mContext = context;
-		mContext = context;
-		initView(context, 0);
 	}
 
-	private void textureMapViewView(Context context, TextureMapView textureMapView) {
-		textureMapView.showZoomControls(false);
-		FrameLayout.LayoutParams fParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);
-		this.addView(textureMapView, fParams);
-		baiduMap = textureMapView.getMap();
-	}
-
-	private void mapView(Context context, MapView mapView) {
-		mapView.showZoomControls(false);
-		FrameLayout.LayoutParams fParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);
-		this.addView(mapView, fParams);
-		baiduMap = mapView.getMap();
+	private void doBaiduMapView_RegionChange(LatLng latLng) {
+		try {
+			DoInvokeResult _invokeResult = new DoInvokeResult(model.getUniqueKey());
+			JSONObject _obj = new JSONObject();
+			_obj.put("latitude", latLng.latitude);
+			_obj.put("longitude", latLng.longitude);
+			_invokeResult.setResultNode(_obj);
+			model.getEventCenter().fireEvent("regionChange", _invokeResult);
+		} catch (Exception e) {
+			DoServiceContainer.getLogEngine().writeError("do_BaiduMapView_View regionChange event\n\t", e);
+		}
 	}
 
 	/**
-	 * 初始化组件
-	 * 
-	 * @param context
+	 * 初始化加载view准备,_doUIModule是对应当前UIView的model实例
 	 */
-	private void initView(Context context, int themeType) {
-		if (themeType == 0) {
-			textureMapView = new TextureMapView(context);
-			textureMapViewView(context, textureMapView);
-		} else {
-			mapView = new MapView(context);
-			mapView(context, mapView);
+	@Override
+	public void loadView(DoUIModule _doUIModule) throws Exception {
+		this.model = (do_BaiduMapView_MAbstract) _doUIModule;
+		DoProperty _property = this.model.getProperty("mapScene");
+		if (_property != null) {
+			mapScene = DoTextHelper.strToInt(_property.getValue(), 0);
 		}
+		if (mapScene == 0) {
+			mapView = new TextureMapView(mContext);
+			((TextureMapView) mapView).showZoomControls(false);
+			baiduMap = ((TextureMapView) mapView).getMap();
+		} else {
+			mapView = new MapView(mContext);
+			((MapView) mapView).showZoomControls(false);
+			baiduMap = ((MapView) mapView).getMap();
+		}
+
+		FrameLayout.LayoutParams fParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);
+		this.addView(mapView, fParams);
 
 		baiduMap.setMapType(BaiduMap.MAP_TYPE_NORMAL);
 		baiduMap.setMapStatus(MapStatusUpdateFactory.newMapStatus(new MapStatus.Builder().zoom(10).build()));
@@ -223,27 +231,6 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 
 	}
 
-	private void doBaiduMapView_RegionChange(LatLng latLng) {
-		try {
-			DoInvokeResult _invokeResult = new DoInvokeResult(model.getUniqueKey());
-			JSONObject _obj = new JSONObject();
-			_obj.put("latitude", latLng.latitude);
-			_obj.put("longitude", latLng.longitude);
-			_invokeResult.setResultNode(_obj);
-			model.getEventCenter().fireEvent("regionChange", _invokeResult);
-		} catch (Exception e) {
-			DoServiceContainer.getLogEngine().writeError("do_BaiduMapView_View regionChange event\n\t", e);
-		}
-	}
-
-	/**
-	 * 初始化加载view准备,_doUIModule是对应当前UIView的model实例
-	 */
-	@Override
-	public void loadView(DoUIModule _doUIModule) throws Exception {
-		this.model = (do_BaiduMapView_MAbstract) _doUIModule;
-	}
-
 	/**
 	 * 动态修改属性值时会被调用，方法返回值为true表示赋值有效，并执行onPropertiesChanged，否则不进行赋值；
 	 * 
@@ -262,10 +249,6 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	@Override
 	public void onPropertiesChanged(Map<String, String> _changedValues) {
 		DoUIModuleHelper.handleBasicViewProperChanged(this.model, _changedValues);
-		if (_changedValues.containsKey("mapScene")) {
-			themeTpye = DoTextHelper.strToInt(_changedValues.get("mapScene"), 0);
-			initView(mContext, themeTpye);
-		}
 		if (_changedValues.containsKey("zoomLevel")) {
 			float _zoomLevel = DoTextHelper.strToFloat(_changedValues.get("zoomLevel"), 10.0f);
 			baiduMap.setMapStatus(MapStatusUpdateFactory.newMapStatus(new MapStatus.Builder().zoom(_zoomLevel).build()));
@@ -478,10 +461,13 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		markers.clear();
 		overlays.clear();
 		baiduMap.clear();
-		if (themeTpye == 0) {
-			textureMapView.onDestroy();
-		} else {
-			mapView.onDestroy();
+
+		if (mapView != null) {
+			if (mapScene == 0) {
+				((TextureMapView) mapView).onDestroy();
+			} else {
+				((MapView) mapView).onDestroy();
+			}
 		}
 
 		if (null != mPoiSearch) {
