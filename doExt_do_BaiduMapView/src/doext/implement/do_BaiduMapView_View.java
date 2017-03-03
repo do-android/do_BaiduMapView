@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.Activity;
@@ -42,6 +43,10 @@ import com.baidu.mapapi.map.PolygonOptions;
 import com.baidu.mapapi.map.PolylineOptions;
 import com.baidu.mapapi.map.Stroke;
 import com.baidu.mapapi.map.TextureMapView;
+import com.baidu.mapapi.map.offline.MKOLSearchRecord;
+import com.baidu.mapapi.map.offline.MKOLUpdateElement;
+import com.baidu.mapapi.map.offline.MKOfflineMap;
+import com.baidu.mapapi.map.offline.MKOfflineMapListener;
 import com.baidu.mapapi.model.LatLng;
 import com.baidu.mapapi.model.LatLngBounds;
 import com.baidu.mapapi.search.core.PoiInfo;
@@ -93,7 +98,7 @@ import doext.overlay.WalkingRouteOverlay;
  * 参数解释：@_messageName字符串事件名称，@jsonResult传递事件参数对象； 获取DoInvokeResult对象方式new
  * DoInvokeResult(this.model.getUniqueKey());
  */
-public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView, do_BaiduMapView_IMethod, DoIModuleTypeID, OnGetRoutePlanResultListener {
+public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView, do_BaiduMapView_IMethod, DoIModuleTypeID, OnGetRoutePlanResultListener, MKOfflineMapListener {
 
 	/**
 	 * 每个UIview都会引用一个具体的model实例；
@@ -110,11 +115,13 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	RoutePlanSearch mSearch = null; // 搜索模块，也可去掉地图模块独立使用
 
 	private int mapScene;
+	private MKOfflineMap mKOfflineMap;
 
 	public do_BaiduMapView_View(Context context) {
 		super(context);
 		SDKInitializer.initialize(context.getApplicationContext());
 		this.mContext = context;
+
 	}
 
 	private void doBaiduMapView_RegionChange(LatLng latLng) {
@@ -161,11 +168,12 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 
 			@Override
 			public boolean onMarkerClick(Marker arg0) {
+				String id;
 				// 显示弹窗
 				Button _pop = new Button(mContext);
-
-				String id = arg0.getExtraInfo().getString("id");
-				if (id == null) {
+				try {
+					id = arg0.getExtraInfo().getString("id");
+				} catch (Exception e) {
 					return false;
 				}
 				String info = arg0.getExtraInfo().getString("info");
@@ -228,7 +236,9 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		// 初始化搜索模块，注册事件监听
 		mSearch = RoutePlanSearch.newInstance();
 		mSearch.setOnGetRoutePlanResultListener(this);
-
+		 
+		mKOfflineMap = new MKOfflineMap();
+		mKOfflineMap.init(this);
 	}
 
 	/**
@@ -301,6 +311,22 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		}
 		if ("removeOverlay".equals(_methodName)) {
 			this.removeOverlay(_dictParas, _scriptEngine, _invokeResult);
+			return true;
+		}
+		if ("getHotCityList".equals(_methodName)) {
+			this.getHotCityList(_dictParas, _scriptEngine, _invokeResult);
+			return true;
+		}
+		if ("startDownLoad".equals(_methodName)) {
+			this.startDownLoad(_dictParas, _scriptEngine, _invokeResult);
+			return true;
+		}
+		if ("pauseDownLoad".equals(_methodName)) {
+			this.pauseDownLoad(_dictParas, _scriptEngine, _invokeResult);
+			return true;
+		}
+		if ("removeDownLoad".equals(_methodName)) {
+			this.removeDownLoad(_dictParas, _scriptEngine, _invokeResult);
 			return true;
 		}
 		return false;
@@ -461,7 +487,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		markers.clear();
 		overlays.clear();
 		baiduMap.clear();
-
+		mKOfflineMap.destroy();
 		if (mapView != null) {
 			if (mapScene == 0) {
 				((TextureMapView) mapView).onDestroy();
@@ -941,6 +967,76 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 				return;
 			}
 		}
+	}
+
+	@Override
+	public void onGetOfflineMapState(int type, int state) {
+
+		switch (type) {
+		case MKOfflineMap.TYPE_DOWNLOAD_UPDATE:
+			// 离线地图下载更新事件类型
+			MKOLUpdateElement update = mKOfflineMap.getUpdateInfo(state);
+			fireOfflineMapEvent(update.cityID, update.cityName, update.ratio);
+			break;
+		case MKOfflineMap.TYPE_NEW_OFFLINE:
+			// 有新离线地图安装
+			break;
+		case MKOfflineMap.TYPE_VER_UPDATE:
+			// 版本更新提示
+			break;
+		}
+
+	}
+
+	private void fireOfflineMapEvent(int cityId, String cityName, int ratio) {
+		DoInvokeResult _invokeResult = new DoInvokeResult(model.getUniqueKey());
+		JSONObject jsonObject = new JSONObject();
+		try {
+			jsonObject.put("cityId", cityId);
+			jsonObject.put("cityName", cityName);
+			jsonObject.put("ratio", ratio);
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+		_invokeResult.setResultNode(jsonObject);
+		model.getEventCenter().fireEvent("DownLoad", _invokeResult);
+
+	}
+
+	@Override
+	public void getHotCityList(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
+
+		ArrayList<MKOLSearchRecord> offlineCityList = mKOfflineMap.getHotCityList();
+		JSONArray ja = new JSONArray();
+		for (MKOLSearchRecord record : offlineCityList) {
+			JSONObject _obj = new JSONObject();
+			_obj.put("cityID", record.cityID);
+			_obj.put("cityName", record.cityName);
+			_obj.put("size", record.size);
+			ja.put(_obj);
+		}
+		_invokeResult.setResultArray(ja);
+	}
+
+	@Override
+	public void startDownLoad(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
+		int _cityId = DoJsonHelper.getInt(_dictParas, "cityId", 0);
+		boolean _startTag = mKOfflineMap.start(_cityId);
+		_invokeResult.setResultBoolean(_startTag);
+	}
+
+	@Override
+	public void pauseDownLoad(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
+		int _cityId = DoJsonHelper.getInt(_dictParas, "cityId", 0);
+		boolean _pauseTag =mKOfflineMap.pause(_cityId);
+		_invokeResult.setResultBoolean(_pauseTag);
+	}
+
+	@Override
+	public void removeDownLoad(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
+		int _cityId = DoJsonHelper.getInt(_dictParas, "cityId", 0);
+		boolean _removeTag =mKOfflineMap.remove(_cityId);
+		_invokeResult.setResultBoolean(_removeTag);
 	}
 
 }
