@@ -317,16 +317,16 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			this.getHotCityList(_dictParas, _scriptEngine, _invokeResult);
 			return true;
 		}
-		if ("startDownLoad".equals(_methodName)) {
-			this.startDownLoad(_dictParas, _scriptEngine, _invokeResult);
+		if ("startDownload".equals(_methodName)) {
+			this.startDownload(_dictParas, _scriptEngine, _invokeResult);
 			return true;
 		}
-		if ("pauseDownLoad".equals(_methodName)) {
-			this.pauseDownLoad(_dictParas, _scriptEngine, _invokeResult);
+		if ("pauseDownload".equals(_methodName)) {
+			this.pauseDownload(_dictParas, _scriptEngine, _invokeResult);
 			return true;
 		}
-		if ("removeDownLoad".equals(_methodName)) {
-			this.removeDownLoad(_dictParas, _scriptEngine, _invokeResult);
+		if ("removeDownload".equals(_methodName)) {
+			this.removeDownload(_dictParas, _scriptEngine, _invokeResult);
 			return true;
 		}
 		return false;
@@ -999,7 +999,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			e.printStackTrace();
 		}
 		_invokeResult.setResultNode(jsonObject);
-		model.getEventCenter().fireEvent("DownLoad", _invokeResult);
+		model.getEventCenter().fireEvent("download", _invokeResult);
 
 	}
 	
@@ -1020,22 +1020,22 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	}
 
 	@Override
-	public void startDownLoad(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
-		int _cityId = DoJsonHelper.getInt(_dictParas, "cityId", 0);
+	public void startDownload(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
+		int _cityId = DoJsonHelper.getInt(_dictParas, "cityID", 0);
 		boolean _startTag = mKOfflineMap.start(_cityId);
 		_invokeResult.setResultBoolean(_startTag);
 	}
 
 	@Override
-	public void pauseDownLoad(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
-		int _cityId = DoJsonHelper.getInt(_dictParas, "cityId", 0);
+	public void pauseDownload(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
+		int _cityId = DoJsonHelper.getInt(_dictParas, "cityID", 0);
 		boolean _pauseTag =mKOfflineMap.pause(_cityId);
 		_invokeResult.setResultBoolean(_pauseTag);
 	}
 
 	@Override
-	public void removeDownLoad(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
-		int _cityId = DoJsonHelper.getInt(_dictParas, "cityId", 0);
+	public void removeDownload(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
+		int _cityId = DoJsonHelper.getInt(_dictParas, "cityID", 0);
 		boolean _removeTag =mKOfflineMap.remove(_cityId);
 		_invokeResult.setResultBoolean(_removeTag);
 	}
