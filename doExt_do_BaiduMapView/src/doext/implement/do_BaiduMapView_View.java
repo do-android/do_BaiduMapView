@@ -236,7 +236,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		// 初始化搜索模块，注册事件监听
 		mSearch = RoutePlanSearch.newInstance();
 		mSearch.setOnGetRoutePlanResultListener(this);
-		 
+
 		mKOfflineMap = new MKOfflineMap();
 		mKOfflineMap.init(this);
 	}
@@ -313,14 +313,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			this.removeOverlay(_dictParas, _scriptEngine, _invokeResult);
 			return true;
 		}
-		if ("getHotCityList".equals(_methodName)) {
-			this.getHotCityList(_dictParas, _scriptEngine, _invokeResult);
-			return true;
-		}
-		if ("startDownload".equals(_methodName)) {
-			this.startDownload(_dictParas, _scriptEngine, _invokeResult);
-			return true;
-		}
+
 		if ("pauseDownload".equals(_methodName)) {
 			this.pauseDownload(_dictParas, _scriptEngine, _invokeResult);
 			return true;
@@ -474,7 +467,14 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			this.routePlanSearch(_dictParas, _scriptEngine, _callbackFuncName);
 			return true;
 		}
-
+		if ("getHotCityList".equals(_methodName)) {
+			this.getHotCityList(_dictParas, _scriptEngine, _callbackFuncName);
+			return true;
+		}
+		if ("startDownload".equals(_methodName)) {
+			this.startDownload(_dictParas, _scriptEngine, _callbackFuncName);
+			return true;
+		}
 		return false;
 	}
 
@@ -847,7 +847,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		String _endCityName = DoJsonHelper.getString(_dictParas, "endCityName", "");// 结束地点所在城市
 		String _startCitySite = DoJsonHelper.getString(_dictParas, "startCitySite", "");// 开始地点
 		String _endCitySite = DoJsonHelper.getString(_dictParas, "endCitySite", "");// 结束地点
-
+		
 		if (!TextUtils.isEmpty(_type) && !TextUtils.isEmpty(_startCityName) && !TextUtils.isEmpty(_endCityName) && !TextUtils.isEmpty(_startCitySite) && !TextUtils.isEmpty(_endCitySite)) {
 			baiduMap.clear();
 			PlanNode stNode = PlanNode.withCityNameAndPlaceName(_startCityName, _startCitySite);
@@ -1002,11 +1002,24 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		model.getEventCenter().fireEvent("download", _invokeResult);
 
 	}
-	
 
 	@Override
-	public void getHotCityList(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
+	public void pauseDownload(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
+		int _cityId = DoJsonHelper.getInt(_dictParas, "cityID", 0);
+		boolean _pauseTag = mKOfflineMap.pause(_cityId);
+		_invokeResult.setResultBoolean(_pauseTag);
+	}
 
+	@Override
+	public void removeDownload(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
+		int _cityId = DoJsonHelper.getInt(_dictParas, "cityID", 0);
+		boolean _removeTag = mKOfflineMap.remove(_cityId);
+		_invokeResult.setResultBoolean(_removeTag);
+	}
+
+	@Override
+	public void getHotCityList(JSONObject _dictParas, DoIScriptEngine _scriptEngine, String _callbackFuncName) throws Exception {
+		DoInvokeResult _invokeResult = new DoInvokeResult(model.getUniqueKey());
 		ArrayList<MKOLSearchRecord> offlineCityList = mKOfflineMap.getHotCityList();
 		JSONArray ja = new JSONArray();
 		for (MKOLSearchRecord record : offlineCityList) {
@@ -1017,27 +1030,15 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			ja.put(_obj);
 		}
 		_invokeResult.setResultArray(ja);
+		_scriptEngine.callback(_callbackFuncName, _invokeResult);
 	}
 
 	@Override
-	public void startDownload(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
+	public void startDownload(JSONObject _dictParas, DoIScriptEngine _scriptEngine, String _callbackFuncName) throws Exception {
+		DoInvokeResult _invokeResult = new DoInvokeResult(model.getUniqueKey());
 		int _cityId = DoJsonHelper.getInt(_dictParas, "cityID", 0);
 		boolean _startTag = mKOfflineMap.start(_cityId);
 		_invokeResult.setResultBoolean(_startTag);
+		_scriptEngine.callback(_callbackFuncName, _invokeResult);
 	}
-
-	@Override
-	public void pauseDownload(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
-		int _cityId = DoJsonHelper.getInt(_dictParas, "cityID", 0);
-		boolean _pauseTag =mKOfflineMap.pause(_cityId);
-		_invokeResult.setResultBoolean(_pauseTag);
-	}
-
-	@Override
-	public void removeDownload(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception {
-		int _cityId = DoJsonHelper.getInt(_dictParas, "cityID", 0);
-		boolean _removeTag =mKOfflineMap.remove(_cityId);
-		_invokeResult.setResultBoolean(_removeTag);
-	}
-
 }

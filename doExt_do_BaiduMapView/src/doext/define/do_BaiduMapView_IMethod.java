@@ -17,8 +17,8 @@ public interface do_BaiduMapView_IMethod {
 	void poiSearch(JSONObject _dictParas, DoIScriptEngine _scriptEngine, String _callbackFuncName) throws Exception;
 	void removeOverlay(JSONObject _dictParas, DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception;
 	void routePlanSearch(JSONObject _dictParas, DoIScriptEngine _scriptEngine, String _callbackFuncName) throws Exception;
-	void getHotCityList(JSONObject _dictParas,DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception ;
-	void startDownload(JSONObject _dictParas,DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception ;
+	void getHotCityList(JSONObject _dictParas, DoIScriptEngine _scriptEngine, String _callbackFuncName) throws Exception ;
+	void startDownload(JSONObject _dictParas, DoIScriptEngine _scriptEngine, String _callbackFuncName) throws Exception ;
 	void pauseDownload(JSONObject _dictParas,DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception ;
 	void removeDownload(JSONObject _dictParas,DoIScriptEngine _scriptEngine, DoInvokeResult _invokeResult) throws Exception ;
 }
