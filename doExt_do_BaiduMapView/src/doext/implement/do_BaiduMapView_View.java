@@ -161,7 +161,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		this.addView(mapView, fParams);
 
 		baiduMap.setMapType(BaiduMap.MAP_TYPE_NORMAL);
-		baiduMap.setMapStatus(MapStatusUpdateFactory.newMapStatus(new MapStatus.Builder().zoom(10).build()));
+		baiduMap.setMapStatus(MapStatusUpdateFactory.newMapStatus(new MapStatus.Builder().zoom(12).build()));//之前zoom的参数为10，会导致离线地图下载成功之后需要手动放大地图才能正常显示，查过资料得知，默认zoom为12；
 		markers = new HashMap<String, Marker>();
 		overlays = new HashMap<String, Overlay>();
 		baiduMap.setOnMarkerClickListener(new BaiduMap.OnMarkerClickListener() {
@@ -829,7 +829,8 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 				_result.setResultArray(_array);
 			} catch (Exception e) {
 				_result.setException(e);
-				DoServiceContainer.getLogEngine().writeError("do_BaiduMapView poiSearch \n\t", e);
+				_result.setResultArray(_array);
+//				DoServiceContainer.getLogEngine().writeError("do_BaiduMapView poiSearch \n\t", e);
 			} finally {
 				this.scriptEngine.callback(callbackFuncName, _result);
 			}
