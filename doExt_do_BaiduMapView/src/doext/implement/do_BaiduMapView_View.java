@@ -169,32 +169,35 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			@Override
 			public boolean onMarkerClick(Marker arg0) {
 				String id;
-				// 显示弹窗
-				Button _pop = new Button(mContext);
 				try {
 					id = arg0.getExtraInfo().getString("id");
 				} catch (Exception e) {
 					return false;
 				}
-				String info = arg0.getExtraInfo().getString("info");
-				final String data = arg0.getExtraInfo().getString("data");
-				if (info != null)
-					_pop.setText(info);
-				_pop.setTextSize(13f);
-				int _popupId = DoResourcesHelper.getIdentifier("popup", "drawable", do_BaiduMapView_View.this);
-				_pop.setBackgroundResource(_popupId);
-				_pop.setGravity(Gravity.CENTER);
 
-				InfoWindow mInfoWindow = new InfoWindow(BitmapDescriptorFactory.fromView(_pop), arg0.getPosition(), -47, new OnInfoWindowClickListener() {
-					public void onInfoWindowClick() {
-						doBaiduMapView_TouchMarker(data);
-					}
-				});
-				popWindowId = id;
-				baiduMap.showInfoWindow(mInfoWindow);
+				if (arg0.getExtraInfo().getBoolean("popup")) {
+					// 显示弹窗
+					Button _pop = new Button(mContext);
+					String info = arg0.getExtraInfo().getString("info");
+					final String data = arg0.getExtraInfo().getString("data");
+					if (info != null)
+						_pop.setText(info);
+					_pop.setTextSize(13f);
+					int _popupId = DoResourcesHelper.getIdentifier("popup", "drawable", do_BaiduMapView_View.this);
+					_pop.setBackgroundResource(_popupId);
+					_pop.setGravity(Gravity.CENTER);
+
+					InfoWindow mInfoWindow = new InfoWindow(BitmapDescriptorFactory.fromView(_pop), arg0.getPosition(), -47, new OnInfoWindowClickListener() {
+						public void onInfoWindowClick() {
+							doBaiduMapView_TouchMarker(data);
+						}
+					});
+					popWindowId = id;
+					baiduMap.showInfoWindow(mInfoWindow);
+				}
 
 				// 标记点击事件回调
-				doBaiduMapView_TouchMarker(data);
+				doBaiduMapView_TouchMarker(arg0.getExtraInfo().getString("data"));
 
 				return true;
 			}
@@ -574,10 +577,12 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 				Double longitude = DoJsonHelper.getDouble(childData, "longitude", 116.403901);
 				String url = DoJsonHelper.getString(childData, "url", "");
 				String info = DoJsonHelper.getString(childData, "info", "");
+				boolean popup = DoJsonHelper.getBoolean(childData, "popup", true);
 				LatLng latLng = new LatLng(latitude, longitude);
 				Bundle bundle = new Bundle();
 				bundle.putString("id", id);
 				bundle.putString("info", info);
+				bundle.putBoolean("popup", popup);
 				bundle.putString("data", childData.toString());
 				// 构建Marker图标
 				BitmapDescriptor bitmap = BitmapDescriptorFactory.fromBitmap(getLocalBitmap(url));
@@ -848,11 +853,28 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		String _endCityName = DoJsonHelper.getString(_dictParas, "endCityName", "");// 结束地点所在城市
 		String _startCitySite = DoJsonHelper.getString(_dictParas, "startCitySite", "");// 开始地点
 		String _endCitySite = DoJsonHelper.getString(_dictParas, "endCitySite", "");// 结束地点
-		
+		PlanNode stNode;
+		PlanNode enNode;
 		if (!TextUtils.isEmpty(_type) && !TextUtils.isEmpty(_startCityName) && !TextUtils.isEmpty(_endCityName) && !TextUtils.isEmpty(_startCitySite) && !TextUtils.isEmpty(_endCitySite)) {
 			baiduMap.clear();
-			PlanNode stNode = PlanNode.withCityNameAndPlaceName(_startCityName, _startCitySite);
-			PlanNode enNode = PlanNode.withCityNameAndPlaceName(_endCityName, _endCitySite);
+			if (_startCitySite.contains(",")) {
+				String[] _latLng1 = _startCitySite.split(",");
+				String[] _latLng2 = _endCitySite.split(",");
+				if (_latLng1 == null || _latLng2 == null || _latLng1.length != 2 || _latLng2.length != 2) {
+					throw new Exception("startCitySite 或  endCitySite参数值非法！");
+				}
+				double _p1_lat = DoTextHelper.strToDouble(_latLng1[0], 0);
+				double _p1_lng = DoTextHelper.strToDouble(_latLng1[1], 0);
+				double _p2_lat = DoTextHelper.strToDouble(_latLng2[0], 0);
+				double _p2_lng = DoTextHelper.strToDouble(_latLng2[1], 0);
+				LatLng _p1 = new LatLng(_p1_lat, _p1_lng);
+				LatLng _p2 = new LatLng(_p2_lat, _p2_lng);
+				stNode = PlanNode.withLocation(_p1);
+				enNode = PlanNode.withLocation(_p2);
+			} else {
+				stNode = PlanNode.withCityNameAndPlaceName(_startCityName, _startCitySite);
+				enNode = PlanNode.withCityNameAndPlaceName(_endCityName, _endCitySite);
+			}
 			if (_type.equals("Bus")) {
 				mSearch.transitSearch((new TransitRoutePlanOption()).from(stNode).city(_startCityName).to(enNode));
 			} else if (_type.equals("Ride")) {
