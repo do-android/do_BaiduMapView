@@ -107,6 +107,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	private ViewGroup mapView;
 	private BaiduMap baiduMap;
 	private Map<String, Marker> markers;
+	private Map<String, InfoWindow> infoWindows;
 	private Map<String, Overlay> overlays;
 	private Context mContext;
 	private String popWindowId;
@@ -163,42 +164,25 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		baiduMap.setMapType(BaiduMap.MAP_TYPE_NORMAL);
 		baiduMap.setMapStatus(MapStatusUpdateFactory.newMapStatus(new MapStatus.Builder().zoom(12).build()));//之前zoom的参数为10，会导致离线地图下载成功之后需要手动放大地图才能正常显示，查过资料得知，默认zoom为12；
 		markers = new HashMap<String, Marker>();
+		infoWindows = new HashMap<String, InfoWindow>();
 		overlays = new HashMap<String, Overlay>();
 		baiduMap.setOnMarkerClickListener(new BaiduMap.OnMarkerClickListener() {
 
 			@Override
-			public boolean onMarkerClick(Marker arg0) {
+			public boolean onMarkerClick(Marker marker) {
 				String id;
 				try {
-					id = arg0.getExtraInfo().getString("id");
+					id = marker.getExtraInfo().getString("id");
 				} catch (Exception e) {
 					return false;
 				}
-
-				if (arg0.getExtraInfo().getBoolean("popup")) {
-					// 显示弹窗
-					Button _pop = new Button(mContext);
-					String info = arg0.getExtraInfo().getString("info");
-					final String data = arg0.getExtraInfo().getString("data");
-					if (info != null)
-						_pop.setText(info);
-					_pop.setTextSize(13f);
-					int _popupId = DoResourcesHelper.getIdentifier("popup", "drawable", do_BaiduMapView_View.this);
-					_pop.setBackgroundResource(_popupId);
-					_pop.setGravity(Gravity.CENTER);
-
-					InfoWindow mInfoWindow = new InfoWindow(BitmapDescriptorFactory.fromView(_pop), arg0.getPosition(), -47, new OnInfoWindowClickListener() {
-						public void onInfoWindowClick() {
-							doBaiduMapView_TouchMarker(data);
-						}
-					});
-					popWindowId = id;
+				popWindowId = id;
+				InfoWindow mInfoWindow = infoWindows.get(id);
+				if (mInfoWindow != null) {
 					baiduMap.showInfoWindow(mInfoWindow);
 				}
-
 				// 标记点击事件回调
-				doBaiduMapView_TouchMarker(arg0.getExtraInfo().getString("data"));
-
+				doBaiduMapView_TouchMarker(marker.getExtraInfo().getString("data"));
 				return true;
 			}
 		});
@@ -488,6 +472,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	public void onDispose() {
 		// ...do something
 		markers.clear();
+		infoWindows.clear();
 		overlays.clear();
 		baiduMap.clear();
 		mKOfflineMap.destroy();
@@ -567,7 +552,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		try {
 			JSONArray dataArray = DoJsonHelper.getJSONArray(_dictParas, "data");
 			for (int i = 0; i < dataArray.length(); i++) {
-				JSONObject childData = dataArray.getJSONObject(i);
+				final JSONObject childData = dataArray.getJSONObject(i);
 				String id = DoJsonHelper.getString(childData, "id", "");
 				if (markers.containsKey(id)) {
 					DoServiceContainer.getLogEngine().writeError("do_BaiduMapView addMarkers \n\t", new Exception("id为" + id + "已经存在！"));
@@ -578,12 +563,11 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 				String url = DoJsonHelper.getString(childData, "url", "");
 				String info = DoJsonHelper.getString(childData, "info", "");
 				boolean popup = DoJsonHelper.getBoolean(childData, "popup", true);
+				boolean initPopupVisible = DoJsonHelper.getBoolean(childData, "initPopupVisible", false);
+
 				LatLng latLng = new LatLng(latitude, longitude);
 				Bundle bundle = new Bundle();
 				bundle.putString("id", id);
-				bundle.putString("info", info);
-				bundle.putBoolean("popup", popup);
-				bundle.putString("data", childData.toString());
 				// 构建Marker图标
 				BitmapDescriptor bitmap = BitmapDescriptorFactory.fromBitmap(getLocalBitmap(url));
 				// 构建MarkerOption，用于在地图上添加Marker
@@ -591,6 +575,28 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 				// 在地图上添加Marker，并显示
 				Marker marker = (Marker) baiduMap.addOverlay(option);
 				markers.put(id, marker);
+
+				// true 显示弹窗
+				if (popup) {
+					Button _pop = new Button(mContext);
+					if (info != null)
+						_pop.setText(info);
+					_pop.setTextSize(13f);
+					int _popupId = DoResourcesHelper.getIdentifier("popup", "drawable", do_BaiduMapView_View.this);
+					_pop.setBackgroundResource(_popupId);
+					_pop.setGravity(Gravity.CENTER);
+
+					InfoWindow mInfoWindow = new InfoWindow(BitmapDescriptorFactory.fromView(_pop), marker.getPosition(), -47, new OnInfoWindowClickListener() {
+						public void onInfoWindowClick() {
+							doBaiduMapView_TouchMarker(childData.toString());
+						}
+					});
+
+					infoWindows.put(id, mInfoWindow);
+					if (initPopupVisible) { //是否初始化显示
+						baiduMap.showInfoWindow(mInfoWindow);
+					}
+				}
 			}
 		} catch (Exception e) {
 			DoServiceContainer.getLogEngine().writeError("添加一组标记异常", e);
