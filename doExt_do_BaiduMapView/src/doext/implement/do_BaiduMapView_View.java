@@ -13,6 +13,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -42,6 +43,7 @@ import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.map.PolygonOptions;
 import com.baidu.mapapi.map.PolylineOptions;
 import com.baidu.mapapi.map.Stroke;
+import com.baidu.mapapi.map.TextOptions;
 import com.baidu.mapapi.map.TextureMapView;
 import com.baidu.mapapi.map.offline.MKOLSearchRecord;
 import com.baidu.mapapi.map.offline.MKOLUpdateElement;
@@ -575,6 +577,45 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 				// 在地图上添加Marker，并显示
 				Marker marker = (Marker) baiduMap.addOverlay(option);
 				markers.put(id, marker);
+
+				JSONObject _textMarkerObj = DoJsonHelper.getJSONObject(childData, "textMarker");
+				String _text = DoJsonHelper.getString(_textMarkerObj, "text", "");
+				if (!TextUtils.isEmpty(_text)) {
+					int _fontColor = DoUIModuleHelper.getColorFromString(DoJsonHelper.getString(_textMarkerObj, "fontColor", "000000FF"), Color.BLACK);
+					String _fontStyle = DoJsonHelper.getString(_textMarkerObj, "fontStyle", "normal");
+					int _fontSize = DoUIModuleHelper.getDeviceFontSize(model, DoJsonHelper.getString(_textMarkerObj, "fontSize", "17"));
+					String _alignX = DoJsonHelper.getString(_textMarkerObj, "alignX", "center");
+					String _alignY = DoJsonHelper.getString(_textMarkerObj, "alignY", "center");
+
+					TextOptions _textOption = new TextOptions();
+//					textOption.bgColor(0xAAFFFF00);
+					_textOption.text(_text);
+					_textOption.fontColor(_fontColor);
+					if ("bold".equals(_fontStyle)) {
+						_textOption.typeface(Typeface.DEFAULT_BOLD);
+					} else {
+						_textOption.typeface(Typeface.DEFAULT);
+					}
+					_textOption.fontSize(_fontSize);
+
+					int _aX = TextOptions.ALIGN_CENTER_HORIZONTAL;
+					int _aY = TextOptions.ALIGN_CENTER_VERTICAL;
+
+					if ("left".equals(_alignX)) {
+						_aX = TextOptions.ALIGN_LEFT;
+					} else if ("right".equals(_alignX)) {
+						_aX = TextOptions.ALIGN_RIGHT;
+					}
+
+					if ("top".equals(_alignY)) {
+						_aY = TextOptions.ALIGN_TOP;
+					} else if ("bottom".equals(_alignY)) {
+						_aY = TextOptions.ALIGN_BOTTOM;
+					}
+					_textOption.align(_aX, _aY);
+					_textOption.position(latLng);
+					baiduMap.addOverlay(_textOption);
+				}
 
 				// true 显示弹窗
 				if (popup) {
