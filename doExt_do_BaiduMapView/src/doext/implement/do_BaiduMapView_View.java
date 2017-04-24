@@ -570,6 +570,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 				LatLng latLng = new LatLng(latitude, longitude);
 				Bundle bundle = new Bundle();
 				bundle.putString("id", id);
+				bundle.putString("data", childData.toString());
 				// 构建Marker图标
 				BitmapDescriptor bitmap = BitmapDescriptorFactory.fromBitmap(getLocalBitmap(url));
 				// 构建MarkerOption，用于在地图上添加Marker
