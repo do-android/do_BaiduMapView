@@ -25,35 +25,36 @@ import doext.implement.do_BaiduMapView_Model;
 import doext.implement.do_BaiduMapView_View;
 import dotest.module.frame.debug.DoPage;
 import dotest.module.frame.debug.DoService;
+
 /**
  * webview组件测试样例
  */
-public class BaiduMapSampleTestActivty extends DoTestActivity{
+public class BaiduMapSampleTestActivty extends DoTestActivity {
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 	}
-	
+
 	@Override
 	protected void initModuleModel() throws Exception {
 		this.model = new do_BaiduMapView_Model();
 	}
-	
+
 	@Override
 	protected void initUIView() throws Exception {
 		do_BaiduMapView_View view = new do_BaiduMapView_View(this);
-        DoPage _doPage = new DoPage();
-        ((DoUIModule)this.model).setCurrentUIModuleView(view);
-        ((DoUIModule)this.model).setCurrentPage(_doPage);
-        view.loadView((DoUIModule)this.model);
-        LinearLayout uiview = (LinearLayout)findViewById(R.id.uiview);
-        uiview.addView(view);
+		DoPage _doPage = new DoPage();
+		((DoUIModule) this.model).setCurrentUIModuleView(view);
+		((DoUIModule) this.model).setCurrentPage(_doPage);
+		view.loadView((DoUIModule) this.model);
+		LinearLayout uiview = (LinearLayout) findViewById(R.id.uiview);
+		uiview.addView(view);
 	}
 
 	@Override
 	public void doTestProperties(View view) {
-		 DoService.setPropertyValue(this.model, "zoomLevel", "15");
+		DoService.setPropertyValue(this.model, "zoomLevel", "15");
 	}
 
 	@Override
@@ -68,38 +69,38 @@ public class BaiduMapSampleTestActivty extends DoTestActivity{
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				String resultNum = _editText.getText().toString().trim();
-				if(resultNum==null||"".equals(resultNum))
+				if (resultNum == null || "".equals(resultNum))
 					return;
-				
+
 				int result = Integer.parseInt(resultNum);
 				switch (result) {
 				case 1:
-					 //设置地图中心点坐标
-					 Map<String, Object> centerXy = new HashMap<String,Object>();
-					 centerXy.put("latitude", "40.915174");
-					 centerXy.put("longitude", "117.403901");
-					 DoService.syncMethod(model, "setCenter", centerXy);
+					// 设置地图中心点坐标
+					Map<String, Object> centerXy = new HashMap<String, Object>();
+					centerXy.put("latitude", "40.915174");
+					centerXy.put("longitude", "117.403901");
+					DoService.syncMethod(model, "setCenter", centerXy);
 					break;
 				case 2:
-					//在地图上添加一组标记
+					// 在地图上添加一组标记
 					Map<String, Object> markers = new HashMap<String, Object>();
 					JSONArray data = getMarkerStrs();
 					markers.put("data", data);
 					DoService.syncMethod(model, "addMarkers", markers);
 					break;
 				case 3:
-					//在地图上删除一组标记
+					// 在地图上删除一组标记
 					Map<String, Object> remove_markers = new HashMap<String, Object>();
 					JSONArray jsonArray = new JSONArray();
 					jsonArray.put("0_test_id_");
 					jsonArray.put("2_test_id_");
-					
+
 					remove_markers.put("ids", jsonArray);
 					DoService.syncMethod(model, "removeMarker", remove_markers);
 					break;
-					
+
 				case 4:
-					//移除所有的标记
+					// 移除所有的标记
 					DoService.syncMethod(model, "removeAll", null);
 					break;
 				default:
@@ -133,23 +134,31 @@ public class BaiduMapSampleTestActivty extends DoTestActivity{
 		DoInvokeResult invokeResult = new DoInvokeResult(this.model.getUniqueKey());
 		this.model.getEventCenter().fireEvent("_messageName", invokeResult);
 	}
-	
-	private JSONArray getMarkerStrs(){
-		
+
+	private JSONArray getMarkerStrs() {
+
 		JSONArray jsonArray = null;
 		try {
-			
+
 			jsonArray = new JSONArray();
-			for(int i=0;i<3;i++){
-				JSONObject stoneObject = new JSONObject();  
-                stoneObject.put("id", i+"_test_id_");  
-                stoneObject.put("latitude", 39.915174+i*0.1+"");  
-                stoneObject.put("longitude", 116.403901+i*0.1+"");  
-                stoneObject.put("url", "/storage/emulated/0/picture/icon_marka.png");
-                stoneObject.put("info", "描述信息"+i);
-                jsonArray.put(stoneObject);
+			for (int i = 0; i < 3; i++) {
+				JSONObject stoneObject = new JSONObject();
+				stoneObject.put("id", i + "_test_id_");
+				stoneObject.put("latitude", 39.915174 + i * 0.1 + "");
+				stoneObject.put("longitude", 116.403901 + i * 0.1 + "");
+				// stoneObject.put("url",
+				// "/storage/emulated/0/picture/icon_marka.png");
+				stoneObject.put("url", "/sdcard/temp.jpg");
+				stoneObject.put("info", "描述信息" + i);
+				JSONObject jsonObject = new JSONObject();
+				jsonObject.put("text", "11111");
+				jsonObject.put("fontColor", "64B1FFFF");
+				jsonObject.put("fontStyle", "bold");
+				jsonObject.put("fontSize", "30");
+				stoneObject.put("textMarker", jsonObject);
+				jsonArray.put(stoneObject);
 			}
-			
+
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}

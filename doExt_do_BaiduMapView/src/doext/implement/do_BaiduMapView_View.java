@@ -16,10 +16,13 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 
 import com.baidu.mapapi.SDKInitializer;
 import com.baidu.mapapi.map.ArcOptions;
@@ -43,7 +46,6 @@ import com.baidu.mapapi.map.OverlayOptions;
 import com.baidu.mapapi.map.PolygonOptions;
 import com.baidu.mapapi.map.PolylineOptions;
 import com.baidu.mapapi.map.Stroke;
-import com.baidu.mapapi.map.TextOptions;
 import com.baidu.mapapi.map.TextureMapView;
 import com.baidu.mapapi.map.offline.MKOLSearchRecord;
 import com.baidu.mapapi.map.offline.MKOLUpdateElement;
@@ -75,6 +77,7 @@ import com.baidu.mapapi.utils.DistanceUtil;
 
 import core.DoServiceContainer;
 import core.helper.DoIOHelper;
+import core.helper.DoImageHandleHelper;
 import core.helper.DoImageLoadHelper;
 import core.helper.DoJsonHelper;
 import core.helper.DoResourcesHelper;
@@ -116,7 +119,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	private LatLng latLng;
 	// 搜索相关
 	RoutePlanSearch mSearch = null; // 搜索模块，也可去掉地图模块独立使用
-
+	private double radiusZoom;
 	private int mapScene;
 	private MKOfflineMap mKOfflineMap;
 
@@ -146,6 +149,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 	@Override
 	public void loadView(DoUIModule _doUIModule) throws Exception {
 		this.model = (do_BaiduMapView_MAbstract) _doUIModule;
+		radiusZoom = (model.getXZoom() + model.getYZoom()) / 2;
 		DoProperty _property = this.model.getProperty("mapScene");
 		if (_property != null) {
 			mapScene = DoTextHelper.strToInt(_property.getValue(), 0);
@@ -164,7 +168,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 		this.addView(mapView, fParams);
 
 		baiduMap.setMapType(BaiduMap.MAP_TYPE_NORMAL);
-		baiduMap.setMapStatus(MapStatusUpdateFactory.newMapStatus(new MapStatus.Builder().zoom(12).build()));//之前zoom的参数为10，会导致离线地图下载成功之后需要手动放大地图才能正常显示，查过资料得知，默认zoom为12；
+		baiduMap.setMapStatus(MapStatusUpdateFactory.newMapStatus(new MapStatus.Builder().zoom(12).build()));// 之前zoom的参数为10，会导致离线地图下载成功之后需要手动放大地图才能正常显示，查过资料得知，默认zoom为12；
 		markers = new HashMap<String, Marker>();
 		infoWindows = new HashMap<String, InfoWindow>();
 		overlays = new HashMap<String, Overlay>();
@@ -587,35 +591,40 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 					int _fontSize = DoUIModuleHelper.getDeviceFontSize(model, DoJsonHelper.getString(_textMarkerObj, "fontSize", "17"));
 					String _alignX = DoJsonHelper.getString(_textMarkerObj, "alignX", "center");
 					String _alignY = DoJsonHelper.getString(_textMarkerObj, "alignY", "center");
+					int _bgColor = DoUIModuleHelper.getColorFromString(DoJsonHelper.getString(_textMarkerObj, "bgColor", "FFFFFF00"), Color.TRANSPARENT);
+					float _radius = (float) (DoTextHelper.strToFloat(DoJsonHelper.getString(_textMarkerObj, "radius", "0"), 0f) * radiusZoom);
 
-					TextOptions _textOption = new TextOptions();
-//					textOption.bgColor(0xAAFFFF00);
-					_textOption.text(_text);
-					_textOption.fontColor(_fontColor);
+					TextView coverNameTv = new TextView(mContext);
+					coverNameTv.setBackgroundColor(_bgColor);
+					coverNameTv.setText(_text);
+					coverNameTv.setTextColor(_fontColor);
 					if ("bold".equals(_fontStyle)) {
-						_textOption.typeface(Typeface.DEFAULT_BOLD);
+						coverNameTv.setTypeface(Typeface.DEFAULT_BOLD);
 					} else {
-						_textOption.typeface(Typeface.DEFAULT);
+						coverNameTv.setTypeface(Typeface.DEFAULT);
 					}
-					_textOption.fontSize(_fontSize);
+					coverNameTv.setTextSize(TypedValue.COMPLEX_UNIT_PX, _fontSize);
 
-					int _aX = TextOptions.ALIGN_CENTER_HORIZONTAL;
-					int _aY = TextOptions.ALIGN_CENTER_VERTICAL;
+					float _aX = 0.5f; // 居中
+					float _aY = 0.5f; // 居中
 
 					if ("left".equals(_alignX)) {
-						_aX = TextOptions.ALIGN_LEFT;
+						_aX = 0.0f;// 左对齐
 					} else if ("right".equals(_alignX)) {
-						_aX = TextOptions.ALIGN_RIGHT;
+						_aX = 1.0f;// 右对齐
 					}
 
 					if ("top".equals(_alignY)) {
-						_aY = TextOptions.ALIGN_TOP;
+						_aY = 0.0f;// 上对齐
 					} else if ("bottom".equals(_alignY)) {
-						_aY = TextOptions.ALIGN_BOTTOM;
+						_aY = 1.0f;// 下对齐
 					}
-					_textOption.align(_aX, _aY);
-					_textOption.position(latLng);
-					baiduMap.addOverlay(_textOption);
+
+					Bitmap viewbitmap = getBitmapFromView(coverNameTv);
+					Bitmap newBitmap = DoImageHandleHelper.createRoundBitmap(viewbitmap, _radius);
+					BitmapDescriptor bd1 = BitmapDescriptorFactory.fromBitmap(newBitmap);
+					MarkerOptions ooA = new MarkerOptions().position(latLng).icon(bd1).anchor(_aX, _aY);
+					baiduMap.addOverlay(ooA);
 				}
 
 				// true 显示弹窗
@@ -635,7 +644,7 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 					});
 
 					infoWindows.put(id, mInfoWindow);
-					if (initPopupVisible) { //是否初始化显示
+					if (initPopupVisible) { // 是否初始化显示
 						baiduMap.showInfoWindow(mInfoWindow);
 					}
 				}
@@ -645,6 +654,15 @@ public class do_BaiduMapView_View extends FrameLayout implements DoIUIModuleView
 			_invokeResult.setResultBoolean(false);
 		}
 		_invokeResult.setResultBoolean(true);
+	}
+
+	private Bitmap getBitmapFromView(View view) {
+		view.destroyDrawingCache();
+		view.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED), View.MeasureSpec.UNSPECIFIED);
+		view.layout(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight());
+		view.setDrawingCacheEnabled(true);
+		Bitmap bitmap = view.getDrawingCache();
+		return bitmap;
 	}
 
 	/**
